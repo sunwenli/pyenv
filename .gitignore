@@ -6,5 +6,9 @@
 /libexec/*.dylib
 /src/Makefile
 /src/*.o
-/bats/
+/bats
+/bats-*/
 /default-packages
+.idea
+*.un~
+*.swp

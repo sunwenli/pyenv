@@ -6,8 +6,8 @@ create_version() {
   mkdir -p "${PYENV_ROOT}/versions/$1"
 }
 
-setup() {
-  mkdir -p "$PYENV_TEST_DIR"
+_setup() {
+  mkdir -p "${PYENV_ROOT}"
   cd "$PYENV_TEST_DIR"
 }
 
@@ -68,5 +68,23 @@ pyenv-version-without-stderr() {
   assert_failure
   assert_output <<OUT
 3.3.3 (set by PYENV_VERSION environment variable)
+OUT
+}
+
+@test "--bare prints just the name" {
+  create_version "3.3.3"
+  PYENV_VERSION=3.3.3 run pyenv-version --bare
+  assert_success
+  assert_output <<OUT
+3.3.3
+OUT
+}
+
+@test "version with glob characters is handled correctly" {
+  cd "$BATS_TEST_TMPDIR"; touch 1.1
+  PYENV_VERSION="[1-9].?*" run pyenv-version
+  assert_failure
+  assert_output <<OUT
+pyenv: version \`[1-9].?*' is not installed (set by PYENV_VERSION environment variable)
 OUT
 }

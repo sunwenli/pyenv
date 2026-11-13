@@ -15,7 +15,7 @@ load test_helper
 }
 
 @test "default PYENV_ROOT" {
-  PYENV_ROOT="" HOME=/home/mislav run pyenv root
+  PYENV_ROOT= HOME=/home/mislav run pyenv root
   assert_success
   assert_output "/home/mislav/.pyenv"
 }
@@ -32,26 +32,21 @@ load test_helper
 }
 
 @test "inherited PYENV_DIR" {
-  dir="${BATS_TMPDIR}/myproject"
+  dir="${BATS_TEST_TMPDIR}/myproject"
   mkdir -p "$dir"
   PYENV_DIR="$dir" run pyenv echo PYENV_DIR
   assert_output "$dir"
 }
 
 @test "invalid PYENV_DIR" {
-  dir="${BATS_TMPDIR}/does-not-exist"
+  dir="${BATS_TEST_TMPDIR}/does-not-exist"
   assert [ ! -d "$dir" ]
   PYENV_DIR="$dir" run pyenv echo PYENV_DIR
   assert_failure
   assert_output "pyenv: cannot change working directory to \`$dir'"
 }
 
-@test "adds its own libexec to PATH" {
-  run pyenv echo "PATH"
-  assert_success "${BATS_TEST_DIRNAME%/*}/libexec:${BATS_TEST_DIRNAME%/*}/plugins/python-build/bin:$PATH"
-}
-
-@test "adds plugin bin dirs to PATH" {
+@test "adds its own libexec and plugin bin dirs to PATH" {
   mkdir -p "$PYENV_ROOT"/plugins/python-build/bin
   mkdir -p "$PYENV_ROOT"/plugins/pyenv-each/bin
   run pyenv echo -F: "PATH"
@@ -73,5 +68,14 @@ load test_helper
 @test "PYENV_HOOK_PATH includes pyenv built-in plugins" {
   unset PYENV_HOOK_PATH
   run pyenv echo "PYENV_HOOK_PATH"
-  assert_success "${PYENV_ROOT}/pyenv.d:${BATS_TEST_DIRNAME%/*}/pyenv.d:/usr/local/etc/pyenv.d:/etc/pyenv.d:/usr/lib/pyenv/hooks"
+  assert_success "${PYENV_ROOT}/pyenv.d:${BATS_TEST_DIRNAME%/*}/pyenv.d:/usr/etc/pyenv.d:/usr/local/etc/pyenv.d:/etc/pyenv.d:/usr/lib/pyenv/hooks"
+}
+
+@test "fixes invalid PWD values in Bash <4.4" {
+[[ ${BASH_VERSINFO[0]} -gt 4 || ( ${BASH_VERSINFO[0]} -eq 4 && ${BASH_VERSINFO[1]} -ge 4 ) ]] \
+    && skip "only relevant to Bash <4.4"
+
+    cd "$BATS_TEST_TMPDIR"
+    PWD=. run pyenv echo PWD
+    assert_success "$BATS_TEST_TMPDIR"
 }

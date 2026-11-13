@@ -2,7 +2,7 @@
 
 load test_helper
 
-setup() {
+_setup() {
   mkdir -p "${PYENV_TEST_DIR}/myproject"
   cd "${PYENV_TEST_DIR}/myproject"
 }
@@ -81,4 +81,38 @@ IN
 IN
   run pyenv-version-file-read my-version
   assert_success "3.9.3:3.8.9:2.7.16"
+}
+
+@test "skips \`..' relative path traversal" {
+  echo '..' > my-version
+  run pyenv-version-file-read my-version
+  assert_failure "pyenv: invalid version \`..' ignored in \`my-version'"
+}
+
+@test "skips glob path traversal" {
+  cat > my-version <<'IN'
+../*
+3.9.3
+IN
+  run pyenv-version-file-read my-version
+  assert_success <<'OUT'
+pyenv: invalid version `../*' ignored in `my-version'
+3.9.3
+OUT
+}
+
+@test "allows relative paths that exist and stay within versions" {
+  venv=3.10.3/envs/../test
+  mkdir -p "${PYENV_ROOT}/versions/${venv}"
+  echo -n "${venv}" > my-version
+  run pyenv-version-file-read my-version
+  assert_success "${venv}"
+}
+
+@test "skips relative paths that lead outside of versions" {
+  venv=../3.10.3/envs/test
+  mkdir -p "${PYENV_ROOT}/versions/${venv}"
+  echo -n "${venv}" > my-version
+  run pyenv-version-file-read my-version
+  assert_failure
 }

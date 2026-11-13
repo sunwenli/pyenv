@@ -1,0 +1,28 @@
+# Copyright (c) 2026, Oracle and/or its affiliates.
+
+VERSION='25.4.4'
+RELEASE_TAG='graal-25.4.4'
+
+graalpy_arch="$(graalpy_architecture 2>/dev/null || true)"
+
+case "$graalpy_arch" in
+"linux-amd64" )
+  checksum="a038c8fa650f3bd17046f3cb8609b271e07b0e21fdb8527f10726beee442b93d"
+  ;;
+"linux-aarch64" )
+  checksum="5d0fab1a2f541b387dbf3fbf6b123a5836a0bc99937076f34aeb29282ee246c1"
+  ;;
+"macos-aarch64" )
+  checksum="dce08327e8ccb48423cc50f72a5137d4ff8c9da8ff7319525a69e2e68ac637cd"
+  ;;
+* )
+  { echo
+    colorize 1 "ERROR"
+    echo ": No binary distribution of GraalPy is available for $(uname -sm)."
+    echo
+  } >&2
+  exit 1
+  ;;
+esac
+
+install_package "graalpy3.13-community-${VERSION}" "https://github.com/oracle/graalpython/releases/download/${RELEASE_TAG}/graalpy3.13-community-${VERSION}-${graalpy_arch}.tar.gz#${checksum}" copy ensurepip

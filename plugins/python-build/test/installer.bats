@@ -3,7 +3,7 @@
 load test_helper
 
 @test "installs python-build into PREFIX" {
-  cd "$TMP"
+  cd "$BATS_TEST_TMPDIR"
   PREFIX="${PWD}/usr" run "${BATS_TEST_DIRNAME}/../install.sh"
   assert_success ""
 
@@ -18,7 +18,7 @@ load test_helper
 }
 
 @test "build definitions don't have the executable bit" {
-  cd "$TMP"
+  cd "$BATS_TEST_TMPDIR"
   PREFIX="${PWD}/usr" run "${BATS_TEST_DIRNAME}/../install.sh"
   assert_success ""
 
@@ -30,7 +30,7 @@ OUT
 }
 
 @test "overwrites old installation" {
-  cd "$TMP"
+  cd "$BATS_TEST_TMPDIR"
   mkdir -p bin share/python-build
   touch bin/python-build
   touch share/python-build/2.7.2
@@ -44,7 +44,7 @@ OUT
 }
 
 @test "unrelated files are untouched" {
-  cd "$TMP"
+  cd "$BATS_TEST_TMPDIR"
   mkdir -p bin share/bananas
   chmod g-w bin
   touch bin/bananas
@@ -57,5 +57,5 @@ OUT
   assert [ -e share/bananas/docs ]
 
   run ls -ld bin
-  assert_equal "r-x" "${output:4:3}"
+  assert_equal "-" "${output:5:1}"
 }

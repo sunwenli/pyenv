@@ -1,0 +1,24 @@
+# Copyright (c) 2021, Oracle and/or its affiliates.
+
+VERSION='21.3.0'
+
+case "$(pypy_architecture 2>/dev/null || true)" in
+"linux64" )
+  graalpython_arch="linux"
+  checksum="b17bbc9753fb04f03290660952acfd212020676603970323780f190509b061b9"
+  ;;
+"osx64" )
+  graalpython_arch="macos"
+  checksum="feecbd2567a43aeaeb5ca6a7385ef3d5bd2c94e563b64afee7dcce0c8f87a1c9"
+  ;;
+* )
+  { echo
+    colorize 1 "ERROR"
+    echo ": No binary distribution of GraalPython is available for $(pypy_architecture 2>/dev/null || true)."
+    echo
+  } >&2
+  exit 1
+  ;;
+esac
+
+install_package "graalpython-${VERSION}" "https://github.com/oracle/graalpython/releases/download/vm-${VERSION}/graalpython-${VERSION}-${graalpython_arch}-amd64.tar.gz#${checksum}" graalpython ensurepip

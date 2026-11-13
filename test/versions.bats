@@ -6,7 +6,17 @@ create_version() {
   mkdir -p "${PYENV_ROOT}/versions/$1"
 }
 
-setup() {
+create_alias() {
+  mkdir -p "${PYENV_ROOT}/versions"
+  ln -s "$2" "${PYENV_ROOT}/versions/$1"
+}
+
+create_external_version() {
+  mkdir -p "$PYENV_TEST_DIR/${1:?}"
+  create_alias "${1:?}" "$PYENV_TEST_DIR/${1:?}"
+}
+
+_setup() {
   mkdir -p "$PYENV_TEST_DIR"
   cd "$PYENV_TEST_DIR"
 }
@@ -25,7 +35,7 @@ stub_system_python() {
 }
 
 @test "not even system python available" {
-  PATH="$(path_without python)" run pyenv-versions
+  PATH="$(path_without python python2 python3)" run pyenv-versions
   assert_failure
   assert_output "Warning: no Python detected on the system"
 }
@@ -53,18 +63,50 @@ OUT
   assert_success "3.3"
 }
 
-@test "multiple versions" {
+@test "version with glob characters is handled correctly" {
   stub_system_python
-  create_version "2.7.6"
-  create_version "3.3.3"
-  create_version "3.4.0"
+  create_version "[1-9].?*"
+  cd "$BATS_TEST_TMPDIR"; touch 1.1
   run pyenv-versions
   assert_success
   assert_output <<OUT
 * system (set by ${PYENV_ROOT}/version)
+  [1-9].?*
+OUT
+}
+
+@test "multiple versions and envs" {
+  stub_system_python
+  create_version "2.7.6"
+  create_version "3.4.0"
+  create_version "3.4.0/envs/foo"
+  create_version "3.4.0/envs/bar"
+  create_version "3.5.2"
+  run pyenv-versions
+  assert_success <<OUT
+* system (set by ${PYENV_ROOT}/version)
   2.7.6
+  3.4.0
+  3.4.0/envs/bar
+  3.4.0/envs/foo
+  3.5.2
+OUT
+}
+
+@test "skips envs with --skip-envs" {
+  stub_system_python
+  create_version "3.3.3"
+  create_version "3.4.0"
+  create_version "3.4.0/envs/foo"
+  create_version "3.4.0/envs/bar"
+  create_version "3.5.0"
+
+  run pyenv-versions --skip-envs
+  assert_success <<OUT
+* system (set by ${PYENV_ROOT}/version)
   3.3.3
   3.4.0
+  3.5.0
 OUT
 }
 
@@ -130,7 +172,7 @@ OUT
 
 @test "lists symlinks under versions" {
   create_version "2.7.8"
-  ln -s "2.7.8" "${PYENV_ROOT}/versions/2.7"
+  create_alias "2.7" "2.7.8"
 
   run pyenv-versions --bare
   assert_success
@@ -142,17 +184,60 @@ OUT
 
 @test "doesn't list symlink aliases when --skip-aliases" {
   create_version "1.8.7"
-  ln -s "1.8.7" "${PYENV_ROOT}/versions/1.8"
-  mkdir moo
-  ln -s "${PWD}/moo" "${PYENV_ROOT}/versions/1.9"
+  create_alias "1.8" "1.8.7"
+  create_external_version "moo"
 
   run pyenv-versions --bare --skip-aliases
-  assert_success
-
-  assert_output <<OUT
+  assert_success <<OUT
 1.8.7
-1.9
+moo
 OUT
+}
+
+@test "--executables lists executables everywhere and overrides other switches" {
+  create_alt_executable_in_version "3.5.0" "python"
+  create_alt_executable_in_version "3.5.0" "python1"
+  create_alt_executable_in_version "3.6.0" "python"
+  create_alt_executable_in_version "3.5.0/envs/foo" "python_foo"
+  create_alt_executable_in_version "3.6.0/envs/bar" "python_bar"
+  create_alias "bar" "3.6.0/envs/bar"
+  create_external_version "moo"
+  create_alt_executable_in_version "moo" "moopython"
+
+  run pyenv-versions --skip-aliases --skip-envs --executables
+  assert_success
+  #The sort order does not matter for this functionality. However,
+  #MacOS 15 `sort` sorts differently that Linux's due to a different LC_COLLATE definition for en-US:
+  #https://unix.stackexchange.com/questions/362728/why-does-gnu-sort-sort-differently-on-my-osx-machine-and-linux-machine
+  #So to get a match, we have to check against the same order that the local `sort` produces
+  sort <<OUT | assert_output
+moopython
+python
+python1
+python_bar
+python_foo
+OUT
+}
+
+@test "--known is an alias to pyenv-install --list" {
+  create_version "3.3.3"
+  create_stub pyenv-install 'echo "pyenv-install $*"'
+
+  run pyenv-versions --known
+  assert_success "pyenv-install --list"
+
+  run pyenv-versions -k
+  assert_success "pyenv-install --list"
+}
+
+@test "--known passes --bare through to pyenv-install --list" {
+  create_stub pyenv-install 'echo "pyenv-install $*"'
+
+  run pyenv-versions --bare -k
+  assert_success "pyenv-install --list --bare"
+
+  run pyenv-versions --known --bare
+  assert_success "pyenv-install --list --bare"
 }
 
 @test "lists dot directories under versions" {
@@ -160,4 +245,60 @@ OUT
 
   run pyenv-versions --bare
   assert_success ".venv"
+}
+
+@test "sort supports version sorting" {
+  create_version "1.9.0"
+  create_version "1.53.0"
+  create_version "1.218.0"
+  create_path_executable sort <<SH
+#!$BASH
+cat >/dev/null
+if [ "\$1" == "--version-sort" ]; then
+  echo "${PYENV_ROOT}/versions/1.9.0"
+  echo "${PYENV_ROOT}/versions/1.53.0"
+  echo "${PYENV_ROOT}/versions/1.218.0"
+else exit 1
+fi
+SH
+
+  run pyenv-versions --bare
+  assert_success
+  assert_output <<OUT
+1.9.0
+1.53.0
+1.218.0
+OUT
+}
+
+@test "sort doesn't support version sorting" {
+  create_version "1.9.0"
+  create_version "1.53.0"
+  create_version "1.218.0"
+  create_path_executable sort <<SH
+#!$BASH
+exit 1
+SH
+
+  run pyenv-versions --bare
+  assert_success
+  assert_output <<OUT
+1.218.0
+1.53.0
+1.9.0
+OUT
+}
+
+@test "non-bare output shows symlink contents" {
+  stub_system_python
+  create_version "1.9.0"
+  create_alias "link" "1.9.0"
+
+  run pyenv-versions
+  assert_success
+  assert_output <<OUT
+* system (set by ${PYENV_ROOT}/version)
+  1.9.0
+  link --> 1.9.0
+OUT
 }

@@ -1,13 +1,13 @@
 #!/usr/bin/env bats
 
 load test_helper
-export PYTHON_BUILD_CACHE_PATH="$TMP/cache"
-export MAKE=make
-export MAKE_OPTS="-j 2"
-export CC=cc
-export -n PYTHON_CONFIGURE_OPTS
+_setup() {
+  export PYTHON_BUILD_CACHE_PATH="$BATS_TEST_TMPDIR/cache"
+  export MAKE=make
+  export MAKE_OPTS="-j 2"
+  export CC=cc
+  export -n PYTHON_CONFIGURE_OPTS
 
-setup() {
   mkdir -p "$INSTALL_ROOT"
   stub md5 false
   stub curl false
@@ -29,14 +29,24 @@ cached_tarball() {
 
 tarball() {
   local name="$1"
+  shift
   local path="$PWD/$name"
-  local configure="$path/configure"
-  shift 1
+  local configure="$1"
+  if [[ ${configure:0:1} == "-" ]]; then configure=; fi
+  configure="$path/${configure:-configure}"
+  shift || true
+  local extra_vars var_name
+  if [[ $# -gt 0 ]]; then
+    for var_name in "$@"; do
+      extra_vars="${extra_vars:+$extra_vars }$var_name=\$$var_name"
+    done
+  fi
 
   executable "$configure" <<OUT
 #!$BASH
-echo "$name: CPPFLAGS=\\"\$CPPFLAGS\\" LDFLAGS=\\"\$LDFLAGS\\"" >> build.log
-echo "$name: \$@" \${PYTHONOPT:+PYTHONOPT=\$PYTHONOPT} >> build.log
+echo "$name: CFLAGS=\\"\$CFLAGS\\" CPPFLAGS=\\"\$CPPFLAGS\\" LDFLAGS=\\"\$LDFLAGS\\" PKG_CONFIG_PATH=\\"\$PKG_CONFIG_PATH\\"" >> build.log
+echo "$name:" "\$@" \${PYTHONOPT:+PYTHONOPT=\$PYTHONOPT} >> build.log
+${extra_vars:+echo $name: $extra_vars >>build.log}
 OUT
 
   for file; do
@@ -50,7 +60,7 @@ OUT
 stub_make_install() {
   stub "$MAKE" \
     " : echo \"$MAKE \$@\" >> build.log" \
-    "install : echo \"$MAKE \$@\" >> build.log && cat build.log >> '$INSTALL_ROOT/build.log'"
+    "${1:-install} : echo \"$MAKE \$@\" >> build.log && cat build.log >> '$INSTALL_ROOT/build.log'"
 }
 
 assert_build_log() {
@@ -58,14 +68,25 @@ assert_build_log() {
   assert_output
 }
 
+stub_tcltk() {
+  local tcltk_prefix="${1:?}"
+  mkdir -p "$tcltk_prefix/lib"
+  cat >"$tcltk_prefix/lib/tclConfig.sh" <<!
+TCL_INCLUDE_SPEC='-I${tcltk_prefix}/include'
+TCL_LIB_SPEC='-L${tcltk_prefix}/lib -ltclX.Y'
+!
+  cat >"$tcltk_prefix/lib/tkConfig.sh" <<!
+TK_INCLUDE_SPEC='-I${tcltk_prefix}/include'
+TK_LIB_SPEC='-L${tcltk_prefix}/lib -ltkX.Y'
+!
+
+}
+
 @test "yaml is installed for python" {
   cached_tarball "yaml-0.1.6"
   cached_tarball "Python-3.6.2"
 
-  # pyenv/pyenv#1026
-  stub uname false false
-
-  stub uname '-s : echo Linux' '-s : echo Linux'
+  stub uname '-s : echo Linux'
   stub brew false
   stub_make_install
   stub_make_install
@@ -77,14 +98,57 @@ assert_build_log() {
   unstub make
 
   assert_build_log <<OUT
-yaml-0.1.6: CPPFLAGS="-I${TMP}/install/include " LDFLAGS="-L${TMP}/install/lib "
+yaml-0.1.6: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
 yaml-0.1.6: --prefix=$INSTALL_ROOT
 make -j 2
 make install
-Python-3.6.2: CPPFLAGS="-I${TMP}/install/include " LDFLAGS="-L${TMP}/install/lib "
-Python-3.6.2: --prefix=$INSTALL_ROOT --libdir=$INSTALL_ROOT/lib
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
 make -j 2
 make install
+OUT
+}
+
+@test "apply global and package-specific flags, package flags come later to have precedence" {
+  local yaml_configure="yaml_configure"
+
+  export YAML_CONFIGURE="./$yaml_configure"
+  export YAML_PREFIX_PATH=yaml_prefix_path
+  export YAML_CONFIGURE_OPTS="yaml_configure_opt1 yaml_configure_opt2"
+  export YAML_MAKE_OPTS="yaml_make_opt1 yaml_make_opt2"
+  export YAML_CFLAGS="yaml_cflag1 yaml_cflag2"
+  export YAML_CPPFLAGS="yaml_cppflag1 yaml_cppflag2"
+  export YAML_LDFLAGS="yaml_ldflag1 yaml_ldflag2"
+  export CONFIGURE_OPTS="configure_opt1 configure_opt2"
+  export MAKE_OPTS="make_opt1 make_opt2"
+  export MAKE_INSTALL_OPTS="make_install_opt1 make_install_opt2"
+  export PYTHON_MAKE_INSTALL_OPTS="python_make_install_opt1 python_make_install_opt2"
+  export PYTHON_MAKE_INSTALL_TARGET="python_make_install_target"
+
+  cached_tarball "yaml-0.1.6" "$yaml_configure"
+  cached_tarball "Python-3.6.2"
+
+  stub uname '-s : echo Linux'
+  stub brew false
+  stub_make_install
+  stub_make_install "$PYTHON_MAKE_INSTALL_TARGET"
+
+
+  install_fixture definitions/needs-yaml
+  assert_success
+
+  unstub uname
+  unstub make
+
+  assert_build_log <<OUT
+yaml-0.1.6: CFLAGS="yaml_cflag1 yaml_cflag2" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include yaml_cppflag1 yaml_cppflag2" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib yaml_ldflag1 yaml_ldflag2" PKG_CONFIG_PATH=""
+yaml-0.1.6: --prefix=yaml_prefix_path configure_opt1 configure_opt2 yaml_configure_opt1 yaml_configure_opt2
+make make_opt1 make_opt2 yaml_make_opt1 yaml_make_opt2
+make install make_install_opt1 make_install_opt2
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib configure_opt1 configure_opt2
+make make_opt1 make_opt2
+make python_make_install_target make_install_opt1 make_install_opt2 python_make_install_opt1 python_make_install_opt2
 OUT
 }
 
@@ -92,16 +156,13 @@ OUT
   cached_tarball "yaml-0.1.6"
   cached_tarball "Python-3.6.2"
 
-  # pyenv/pyenv#1026
-  stub uname false false
-
-  stub uname '-s : echo Linux' '-s : echo Linux'
+  stub uname '-s : echo Linux'
   stub brew false
   stub_make_install
   stub_make_install
   stub patch ' : echo patch "$@" | sed -E "s/\.[[:alnum:]]+$/.XXX/" >> build.log'
 
-  TMPDIR="$TMP" install_fixture --patch definitions/needs-yaml <<<""
+  TMPDIR="$BATS_TEST_TMPDIR" install_fixture --patch definitions/needs-yaml <<<""
   assert_success
 
   unstub uname
@@ -109,13 +170,13 @@ OUT
   unstub patch
 
   assert_build_log <<OUT
-yaml-0.1.6: CPPFLAGS="-I${TMP}/install/include " LDFLAGS="-L${TMP}/install/lib "
+yaml-0.1.6: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
 yaml-0.1.6: --prefix=$INSTALL_ROOT
 make -j 2
 make install
-patch -p0 --force -i $TMP/python-patch.XXX
-Python-3.6.2: CPPFLAGS="-I${TMP}/install/include " LDFLAGS="-L${TMP}/install/lib "
-Python-3.6.2: --prefix=$INSTALL_ROOT --libdir=$INSTALL_ROOT/lib
+patch -p0 --force -i $BATS_TEST_TMPDIR/python-patch.XXX
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
 make -j 2
 make install
 OUT
@@ -125,16 +186,13 @@ OUT
   cached_tarball "yaml-0.1.6"
   cached_tarball "Python-3.6.2"
 
-  stub uname '-s : echo Linux' '-s : echo Linux'
+  stub uname '-s : echo Linux'
   stub brew false
   stub_make_install
   stub_make_install
   stub patch ' : echo patch "$@" | sed -E "s/\.[[:alnum:]]+$/.XXX/" >> build.log'
 
-  # pyenv/pyenv#1026
-  stub uname false false
-
-  TMPDIR="$TMP" install_fixture --patch definitions/needs-yaml <<<"diff --git a/script.py"
+  TMPDIR="$BATS_TEST_TMPDIR" install_fixture --patch definitions/needs-yaml <<<"diff --git a/script.py"
   assert_success
 
   unstub uname
@@ -142,13 +200,111 @@ OUT
   unstub patch
 
   assert_build_log <<OUT
-yaml-0.1.6: CPPFLAGS="-I${TMP}/install/include " LDFLAGS="-L${TMP}/install/lib "
+yaml-0.1.6: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
 yaml-0.1.6: --prefix=$INSTALL_ROOT
 make -j 2
 make install
-patch -p1 --force -i $TMP/python-patch.XXX
-Python-3.6.2: CPPFLAGS="-I${TMP}/install/include " LDFLAGS="-L${TMP}/install/lib "
-Python-3.6.2: --prefix=$INSTALL_ROOT --libdir=$INSTALL_ROOT/lib
+patch -p1 --force -i $BATS_TEST_TMPDIR/python-patch.XXX
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 2
+make install
+OUT
+}
+
+@test "Homebrew and port are tried if both are present in PATH in MacOS" {
+  cached_tarball "Python-3.6.2"
+
+  BREW_PREFIX="$BATS_TEST_TMPDIR/homebrew-prefix"
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub brew '--prefix openssl : false'
+  for i in {1..5}; do stub brew false; done
+  stub brew "--prefix : echo '$BREW_PREFIX'"
+  stub port '-q installed openssl3 : false' '-q installed openssl : false'
+  for i in {1..3}; do stub port false; done
+  stub_make_install
+
+  export PYENV_DEBUG=1
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub sw_vers
+  unstub brew
+  unstub port
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include -I$BREW_PREFIX/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib -L$BREW_PREFIX/lib -Wl,-rpath,$BREW_PREFIX/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 2
+make install
+OUT
+}
+
+@test "homebrew with uncommon prefix is added to search path" {
+  cached_tarball "Python-3.6.2"
+
+  BREW_PREFIX="$BATS_TEST_TMPDIR/homebrew-prefix"
+  mkdir -p "$BREW_PREFIX"
+  export PYTHON_BUILD_SKIP_MACPORTS=1
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub brew '--prefix openssl : false'
+  for i in {1..5}; do stub brew false; done
+  stub brew "--prefix : echo '$BREW_PREFIX'"
+  stub_make_install
+
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub brew
+  unstub uname
+  unstub sw_vers
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include -I$BREW_PREFIX/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib -L$BREW_PREFIX/lib -Wl,-rpath,$BREW_PREFIX/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 2
+make install
+OUT
+}
+
+@test "Macports are used in MacOS if Homebrew was not picked" {
+  cached_tarball "Python-3.6.2"
+
+  BREW_PREFIX="$BATS_TEST_TMPDIR/homebrew-prefix"
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub port '-q installed openssl3 : false' '-q installed openssl : false'
+  for i in {1..3}; do stub port false; done
+  stub_make_install
+  export PYTHON_BUILD_SKIP_HOMEBREW=1
+  PORT_PREFIX="$(which port)"
+  PORT_PREFIX="${PORT_PREFIX%/bin/port}"
+
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub sw_vers
+  unstub port
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I$PORT_PREFIX/include -I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L$PORT_PREFIX/lib -Wl,-rpath,$PORT_PREFIX/lib -L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH="${BATS_TEST_TMPDIR}/lib/pkgconfig"
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
 make -j 2
 make install
 OUT
@@ -157,27 +313,27 @@ OUT
 @test "yaml is linked from Homebrew" {
   cached_tarball "Python-3.6.2"
 
-  brew_libdir="$TMP/homebrew-yaml"
+  brew_libdir="$BATS_TEST_TMPDIR/homebrew-yaml"
   mkdir -p "$brew_libdir"
 
-  # pyenv/pyenv#1026
-  stub uname false false
-
-  stub uname '-s : echo Linux'
   stub uname '-s : echo Darwin'
-  stub brew "--prefix libyaml : echo '$brew_libdir'" false
+  stub sw_vers '-productVersion : echo 1010'
+  stub brew "--prefix libyaml : echo '$brew_libdir'"
+  stub brew '--prefix openssl : false'
+  for i in {1..6}; do stub brew false; done
   stub_make_install
 
   install_fixture definitions/needs-yaml
   assert_success
 
   unstub uname
+  unstub sw_vers
   unstub brew
   unstub make
 
   assert_build_log <<OUT
-Python-3.6.2: CPPFLAGS="-I$brew_libdir/include -I${TMP}/install/include " LDFLAGS="-L$brew_libdir/lib -L${TMP}/install/lib "
-Python-3.6.2: --prefix=$INSTALL_ROOT --libdir=$INSTALL_ROOT/lib
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I$brew_libdir/include -I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L$brew_libdir/lib -L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
 make -j 2
 make install
 OUT
@@ -186,13 +342,14 @@ OUT
 @test "readline is linked from Homebrew" {
   cached_tarball "Python-3.6.2"
 
-  readline_libdir="$TMP/homebrew-readline"
+  readline_libdir="$BATS_TEST_TMPDIR/homebrew-readline"
   mkdir -p "$readline_libdir"
-
-  # pyenv/pyenv#1026
-  stub uname false false
-
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub brew '--prefix openssl : false'
+  for i in {1..2}; do stub brew false; done
   stub brew "--prefix readline : echo '$readline_libdir'"
+  for i in {1..3}; do stub brew false; done
   stub_make_install
 
   run_inline_definition <<DEF
@@ -200,29 +357,629 @@ install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.
 DEF
   assert_success
 
+  unstub uname
+  unstub sw_vers
   unstub brew
   unstub make
 
   assert_build_log <<OUT
-Python-3.6.2: CPPFLAGS="-I$readline_libdir/include -I${TMP}/install/include " LDFLAGS="-L$readline_libdir/lib -L${TMP}/install/lib "
-Python-3.6.2: --prefix=$INSTALL_ROOT --libdir=$INSTALL_ROOT/lib
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I$readline_libdir/include -I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L$readline_libdir/lib -L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
 make -j 2
 make install
 OUT
 }
 
+@test "ncurses is linked from Homebrew" {
+  cached_tarball "Python-3.6.2"
+
+  ncurses_libdir="$BATS_TEST_TMPDIR/homebrew-ncurses"
+  mkdir -p "$ncurses_libdir"
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub brew '--prefix openssl : false'
+  for i in {1..3}; do stub brew false; done
+  stub brew "--prefix ncurses : echo '$ncurses_libdir'"
+  for i in {1..2}; do stub brew false; done
+  stub_make_install
+
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub sw_vers
+  unstub brew
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I$ncurses_libdir/include -I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L$ncurses_libdir/lib -L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 2
+make install
+OUT
+}
+
+@test "yaml is linked from MacPorts" {
+  cached_tarball "Python-3.6.2"
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub port "-q installed libyaml : echo '  libyaml @0.2.5_0 (active)'"
+  stub port '-q installed openssl3 : false' '-q installed openssl : false'
+  for i in {1..3}; do stub port false; done
+  stub_make_install
+  export PYTHON_BUILD_SKIP_HOMEBREW=1
+  PORT_PREFIX="$(which port)"
+  PORT_PREFIX="${PORT_PREFIX%/bin/port}"
+
+  install_fixture definitions/needs-yaml
+  assert_success
+
+  unstub uname
+  unstub sw_vers
+  unstub port
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/include -I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/lib -L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH="${BATS_TEST_TMPDIR}/lib/pkgconfig"
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 2
+make install
+OUT
+}
+
+@test "readline is linked from MacPorts" {
+  cached_tarball "Python-3.6.2"
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub port '-q installed openssl3 : false' '-q installed openssl : false'
+  stub port "-q installed readline : echo '  readline @8.2.013_0 (active)'"
+  for i in {1..2}; do stub port false; done
+  stub_make_install
+  export PYTHON_BUILD_SKIP_HOMEBREW=1
+  PORT_PREFIX="$(which port)"
+  PORT_PREFIX="${PORT_PREFIX%/bin/port}"
+
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub sw_vers
+  unstub port
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/include -I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/lib -L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH="${BATS_TEST_TMPDIR}/lib/pkgconfig"
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 2
+make install
+OUT
+}
+
+@test "ncurses is linked from MacPorts" {
+  cached_tarball "Python-3.6.2"
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub port '-q installed openssl3 : false' '-q installed openssl : false'
+  stub port false
+  stub port "-q installed ncurses : echo '$ncurses_libdir'"
+  stub port false
+  stub_make_install
+  export PYTHON_BUILD_SKIP_HOMEBREW=1
+  PORT_PREFIX="$(which port)"
+  PORT_PREFIX="${PORT_PREFIX%/bin/port}"
+
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub sw_vers
+  unstub port
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/include -I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/lib -L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH="${BATS_TEST_TMPDIR}/lib/pkgconfig"
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 2
+make install
+OUT
+}
+
+@test "openssl is linked from Ports in FreeBSD if present" {
+  cached_tarball "Python-3.6.2"
+
+  stub uname '-s : echo FreeBSD'
+  stub uname '-r : echo 11.0-RELEASE'
+  stub sysctl '-n hw.ncpu : echo 1'
+
+  stub pkg "info -e openssl : true"
+  for in in {1..2}; do stub pkg false; done
+
+  stub_make_install
+
+  export -n MAKE_OPTS
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub make
+  unstub pkg
+  unstub sysctl
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib --with-openssl=/usr/local
+make -j 1
+make install
+OUT
+}
+
+@test "readline and sqlite3 are linked from Ports in FreeBSD" {
+  cached_tarball "Python-3.6.2"
+
+  for lib in readline sqlite3; do
+
+    stub uname '-s : echo FreeBSD'
+    stub uname '-r : echo 11.0-RELEASE'
+    stub sysctl '-n hw.ncpu : echo 1'
+
+    stub pkg false
+    stub pkg "$([[ $lib == readline ]] && echo "info -e $lib : true" || echo false)"
+    if [[ $lib == sqlite3 ]]; then stub pkg "info -e $lib : true"; fi
+
+    stub_make_install
+
+    export -n MAKE_OPTS
+    run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+    assert_success
+
+    unstub uname
+    unstub make
+    unstub pkg
+    unstub sysctl
+
+    assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include -I/usr/local/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib -L/usr/local/lib -Wl,-rpath,/usr/local/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 1
+make install
+OUT
+    rm "$INSTALL_ROOT/build.log"
+  done
+}
+
+@test "homebrew is not touched if PYTHON_BUILD_SKIP_HOMEBREW is set" {
+  cached_tarball "Python-3.6.2"
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub brew true; brew
+  stub port false
+  stub_make_install
+  export PYTHON_BUILD_SKIP_HOMEBREW=1
+  export PYTHON_BUILD_SKIP_MACPORTS=1
+
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub brew
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 2
+make install
+OUT
+}
+
+@test "MacPorts is not touched if PYTHON_BUILD_SKIP_MACPORTS is set" {
+  cached_tarball "Python-3.6.2"
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub brew false
+  stub port true; port
+  stub_make_install
+  export PYTHON_BUILD_SKIP_MACPORTS=1
+
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub port
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 2
+make install
+OUT
+}
+
+@test "MacPorts is not touched in Linux" {
+  cached_tarball "Python-3.6.2"
+
+  stub uname '-s : echo Linux'
+  stub port true; port
+  stub_make_install
+
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub port
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 2
+make install
+OUT
+}
+
+@test "MacPorts is used in Linux if PYTHON_BUILD_USE_MACPORTS is set" {
+  cached_tarball "Python-3.6.2"
+
+  stub uname '-s : echo Linux'
+  stub brew false
+  stub port '-q installed openssl3 : false' '-q installed openssl : false'
+  for i in {1..3}; do stub port false; done
+  PORT_PREFIX="$(which port)"
+  PORT_PREFIX="${PORT_PREFIX%/bin/port}"
+  stub_make_install
+  export PYTHON_BUILD_USE_MACPORTS=1
+
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub port
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/include -I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/lib -L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH="${BATS_TEST_TMPDIR}/lib/pkgconfig"
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 2
+make install
+OUT
+}
+
+@test "homebrew is used in Linux if PYTHON_BUILD_USE_HOMEBREW is set" {
+  cached_tarball "Python-3.6.2"
+
+  BREW_PREFIX="$BATS_TEST_TMPDIR/homebrew-prefix"
+  mkdir -p "$BREW_PREFIX"
+
+  stub uname '-s : echo Linux'
+  stub brew '--prefix openssl : false'
+  for i in {1..5}; do stub brew false; done
+  stub brew "--prefix : echo '$BREW_PREFIX'"
+  stub_make_install
+  export PYTHON_BUILD_USE_HOMEBREW=1
+
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub brew
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include -I$BREW_PREFIX/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib -L$BREW_PREFIX/lib -Wl,-rpath,$BREW_PREFIX/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 2
+make install
+OUT
+}
+
+@test "homebrew is used in Linux if Pyenv is installed with Homebrew" {
+  cached_tarball "Python-3.6.2"
+
+  BREW_PREFIX="$(type -p python-build)"
+  BREW_PREFIX="${BREW_PREFIX%/*}"
+  BREW_PREFIX="${BREW_PREFIX%/*}"
+
+  stub uname '-s : echo Linux'
+  stub brew "--prefix : echo '$BREW_PREFIX'"
+  stub brew '--prefix openssl : false'
+  for i in {1..5}; do stub brew false; done
+  stub brew "--prefix : echo '$BREW_PREFIX'"
+  stub_make_install
+
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub brew
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include -I$BREW_PREFIX/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib -L$BREW_PREFIX/lib -Wl,-rpath,$BREW_PREFIX/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 2
+make install
+OUT
+}
+
+@test "homebrew is not used in Linux if Pyenv is not installed with Homebrew" {
+  cached_tarball "Python-3.6.2"
+
+  BREW_PREFIX="$BATS_TEST_TMPDIR/homebrew-prefix"
+  mkdir -p "$BREW_PREFIX"
+
+  stub uname '-s : echo Linux'
+  stub brew "--prefix : echo '$BREW_PREFIX'"
+  stub_make_install
+
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub brew
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
+make -j 2
+make install
+OUT
+}
+
+assert_explicit_openssl() {
+  local configure_opts="$1"
+  local definition_opts="$2"
+  cached_tarball "Python-3.6.2"
+
+  local openssl_libdir="$BATS_TEST_TMPDIR/homebrew-openssl"
+  mkdir -p "$openssl_libdir"
+  executable "$BATS_TEST_TMPDIR/bin/brew" <<OUT
+#!$BASH
+if [ "\$*" = '--prefix openssl' ]; then
+  echo '$openssl_libdir'
+else
+  exit 1
+fi
+OUT
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub_make_install
+  export PYTHON_BUILD_SKIP_MACPORTS=1
+
+  run_inline_definition <<DEF
+function /usr/bin/openssl() { echo "LibreSSL 3.3.6"; }
+export PYTHON_BUILD_CONFIGURE_WITH_OPENSSL=1
+export PYTHON_BUILD_CONFIGURE_WITH_OPENSSL_RPATH=1
+$definition_opts
+install_package "openssl-1.1.1" "https://example.com/openssl-1.1.1.tar.gz" mac_openssl --if has_broken_mac_openssl
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+  [[ "$output" != *"use openssl from homebrew"* ]]
+
+  unstub uname
+  unstub sw_vers
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib $configure_opts
+make -j 2
+make install
+OUT
+}
+
+@test "explicit OpenSSL in CONFIGURE_OPTS bypasses automatic selection" {
+  export CONFIGURE_OPTS="--with-openssl=$BATS_TEST_TMPDIR/custom-openssl"
+  assert_explicit_openssl "$CONFIGURE_OPTS"
+}
+
+@test "explicit OpenSSL in PYTHON_CONFIGURE_OPTS bypasses automatic selection" {
+  export PYTHON_CONFIGURE_OPTS="--with-openssl=$BATS_TEST_TMPDIR/custom-openssl"
+  assert_explicit_openssl "$PYTHON_CONFIGURE_OPTS"
+}
+
+@test "explicit OpenSSL with a separate argument bypasses automatic selection" {
+  export PYTHON_CONFIGURE_OPTS="--with-openssl $BATS_TEST_TMPDIR/custom-openssl"
+  assert_explicit_openssl "$PYTHON_CONFIGURE_OPTS"
+}
+
+@test "explicit OpenSSL in package options bypasses automatic selection" {
+  local openssl_libdir="$BATS_TEST_TMPDIR/custom openssl"
+  assert_explicit_openssl "--with-openssl=$openssl_libdir" \
+    "package_option python configure '--with-openssl=$openssl_libdir'"
+}
+
+assert_standard_build_openssl_selection() {
+  local manager="$1"
+  local expected_opts="$2"
+  local definition_opts="$3"
+  local preceding_check="$4"
+  local expected_searches="${5:-0}"
+  local openssl_libdir="$BATS_TEST_TMPDIR/automatic-openssl"
+  cached_tarball "Python-3.6.2"
+  mkdir -p "$openssl_libdir"
+  executable "$BATS_TEST_TMPDIR/bin/brew" <<OUT
+#!$BASH
+if [ "\$*" = '--prefix openssl' ]; then
+  echo called >> '$BATS_TEST_TMPDIR/openssl-search'
+  echo '$openssl_libdir'
+else
+  exit 1
+fi
+OUT
+  executable "$BATS_TEST_TMPDIR/bin/port" <<OUT
+#!$BASH
+if [ "\$*" = '-q installed openssl3' ]; then
+  echo called >> '$BATS_TEST_TMPDIR/openssl-search'
+  echo 'openssl3 @3.0.0 (active)'
+else
+  exit 1
+fi
+OUT
+  if [ "$manager" = homebrew ]; then
+    export PYTHON_BUILD_USE_HOMEBREW=1
+    export PYTHON_BUILD_SKIP_MACPORTS=1
+  else
+    export PYTHON_BUILD_SKIP_HOMEBREW=1
+    export PYTHON_BUILD_USE_MACPORTS=1
+  fi
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub_make_install
+
+  run_inline_definition <<DEF
+function /usr/bin/openssl() { echo "LibreSSL 3.3.6"; }
+export PYTHON_BUILD_CONFIGURE_WITH_OPENSSL=1
+$definition_opts
+$preceding_check
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+  unstub uname
+  unstub sw_vers
+  unstub make
+
+  run cat "$INSTALL_ROOT/build.log"
+  assert_output_contains "Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib $expected_opts"
+  if [ "$expected_searches" -eq 0 ]; then
+    refute test -e "$BATS_TEST_TMPDIR/openssl-search"
+  else
+    run cat "$BATS_TEST_TMPDIR/openssl-search"
+    assert_success "called"
+  fi
+}
+
+@test "explicit OpenSSL bypasses Homebrew selection in a standard build" {
+  export CONFIGURE_OPTS="--with-openssl=$BATS_TEST_TMPDIR/custom-openssl"
+  assert_standard_build_openssl_selection homebrew "$CONFIGURE_OPTS"
+}
+
+@test "explicit OpenSSL bypasses MacPorts selection in a standard build" {
+  export PYTHON_CONFIGURE_OPTS="--with-openssl $BATS_TEST_TMPDIR/custom-openssl"
+  assert_standard_build_openssl_selection macports "$PYTHON_CONFIGURE_OPTS"
+}
+
+@test "explicit package OpenSSL bypasses repeated Homebrew selection" {
+  local configure_opts="--with-openssl=$BATS_TEST_TMPDIR/custom openssl"
+  assert_standard_build_openssl_selection homebrew "$configure_opts" \
+    "package_option python configure '$configure_opts'" \
+    'has_broken_mac_openssl || true'
+}
+
+@test "explicit package OpenSSL bypasses repeated MacPorts selection" {
+  local configure_opts="--with-openssl=$BATS_TEST_TMPDIR/custom openssl"
+  assert_standard_build_openssl_selection macports "$configure_opts" \
+    "package_option python configure '$configure_opts'" \
+    'has_broken_mac_openssl || true'
+}
+
+@test "standard build selects Homebrew OpenSSL without a broken-system check" {
+  assert_standard_build_openssl_selection homebrew \
+    "--with-openssl=$BATS_TEST_TMPDIR/automatic-openssl" '' '' 1
+}
+
+@test "standard build selects MacPorts OpenSSL without a broken-system check" {
+  assert_standard_build_openssl_selection macports \
+    "--with-openssl=$BATS_TEST_TMPDIR" '' '' 1
+}
+
+@test "standard build does not probe Homebrew OpenSSL again after selection" {
+  assert_standard_build_openssl_selection homebrew \
+    "--with-openssl=$BATS_TEST_TMPDIR/automatic-openssl" '' \
+    'has_broken_mac_openssl || true' 1
+}
+
+@test "standard build does not probe MacPorts OpenSSL again after selection" {
+  assert_standard_build_openssl_selection macports \
+    "--with-openssl=$BATS_TEST_TMPDIR" '' \
+    'has_broken_mac_openssl || true' 1
+}
+
+@test "OpenSSL rpath alone does not bypass Homebrew selection" {
+  local openssl_libdir="$BATS_TEST_TMPDIR/homebrew-openssl"
+  mkdir -p "$openssl_libdir"
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub brew "--prefix openssl : echo '$openssl_libdir'"
+  export PYTHON_CONFIGURE_OPTS="--with-openssl-rpath=auto"
+
+  run_inline_definition <<'DEF'
+function /usr/bin/openssl() { echo "LibreSSL 3.3.6"; }
+export PYTHON_BUILD_CONFIGURE_WITH_OPENSSL=1
+has_broken_mac_openssl || true
+printf '%s\n' "${PYTHON_CONFIGURE_OPTS_ARRAY[@]}"
+DEF
+  assert_success
+  assert_output <<OUT
+python-build: use openssl from homebrew
+--enable-shared
+--libdir=$INSTALL_ROOT/lib
+--with-openssl=$openssl_libdir
+OUT
+  unstub uname
+  unstub sw_vers
+  unstub brew
+}
+
+@test "bundled OpenSSL is still needed without an explicit or package-manager installation" {
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub brew '--prefix openssl : false'
+  export PYTHON_BUILD_SKIP_MACPORTS=1
+
+  run_inline_definition <<'DEF'
+function /usr/bin/openssl() { echo "LibreSSL 3.3.6"; }
+has_broken_mac_openssl && echo "bundled OpenSSL needed"
+DEF
+  assert_success "bundled OpenSSL needed"
+  unstub uname
+  unstub sw_vers
+  unstub brew
+}
+
 @test "readline is not linked from Homebrew when explicitly defined" {
   cached_tarball "Python-3.6.2"
 
-  # python-build
-  readline_libdir="$TMP/custom"
+  readline_libdir="$BATS_TEST_TMPDIR/custom"
   mkdir -p "$readline_libdir/include/readline"
   touch "$readline_libdir/include/readline/rlconf.h"
 
-  # pyenv/pyenv#1026
-  stub uname false false
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
 
-  stub brew
+  stub brew '--prefix openssl : false'
+  for i in {1..5}; do stub brew false; done
   stub_make_install
 
   export PYTHON_CONFIGURE_OPTS="CPPFLAGS=-I$readline_libdir/include LDFLAGS=-L$readline_libdir/lib"
@@ -231,12 +988,277 @@ install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.
 DEF
   assert_success
 
+  unstub uname
+  unstub sw_vers
   unstub brew
   unstub make
 
   assert_build_log <<OUT
-Python-3.6.2: CPPFLAGS="-I${TMP}/install/include " LDFLAGS="-L${TMP}/install/lib "
-Python-3.6.2: --prefix=$INSTALL_ROOT CPPFLAGS=-I$readline_libdir/include LDFLAGS=-L$readline_libdir/lib --libdir=$INSTALL_ROOT/lib
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib CPPFLAGS=-I$readline_libdir/include LDFLAGS=-L$readline_libdir/lib
+make -j 2
+make install
+OUT
+}
+
+@test "tcl-tk is linked from Homebrew via --with-tcl-*" {
+  cached_tarball "Python-3.6.2"
+  stub_tcltk "${tcl_tk_libdir:=$BATS_TEST_TMPDIR/homebrew-tcl-tk}"
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+
+  stub brew '--prefix openssl : false'
+  stub brew "--prefix tcl-tk@8 : echo '$tcl_tk_libdir'"
+  for i in {1..4}; do stub brew false; done
+
+  stub_make_install
+
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub sw_vers
+  unstub brew
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH="${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib/pkgconfig"
+Python-3.6.2: --prefix=${BATS_TEST_TMPDIR}/install --enable-shared --libdir=${BATS_TEST_TMPDIR}/install/lib --with-tcltk-includes=-I${BATS_TEST_TMPDIR}/homebrew-tcl-tk/include -I${BATS_TEST_TMPDIR}/homebrew-tcl-tk/include --with-tcltk-libs=-L${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib -ltclX.Y -L${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib -ltkX.Y
+make -j 2
+make install
+OUT
+}
+
+@test "tcl-tk with external libtommath is linked from Homebrew via --with-tcl-*" {
+  cached_tarball "Python-3.6.2"
+  stub_tcltk "${tcl_tk_libdir:=$BATS_TEST_TMPDIR/homebrew-tcl-tk}"
+  cat >>"$tcl_tk_libdir/lib/tclConfig.sh" <<!
+TCL_DEFS='-DSMTH -DTCL_WITH_EXTERNAL_TOMMATH=1 -DSMTH_ELSE'
+!
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+
+  stub brew '--prefix openssl : false'
+  stub brew "--prefix tcl-tk@8 : echo '$tcl_tk_libdir'"
+  for i in {1..4}; do stub brew false; done
+
+  stub_make_install
+
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub sw_vers
+  unstub brew
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="-DTCL_WITH_EXTERNAL_TOMMATH=1" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH="${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib/pkgconfig"
+Python-3.6.2: --prefix=${BATS_TEST_TMPDIR}/install --enable-shared --libdir=${BATS_TEST_TMPDIR}/install/lib --with-tcltk-includes=-I${BATS_TEST_TMPDIR}/homebrew-tcl-tk/include -I${BATS_TEST_TMPDIR}/homebrew-tcl-tk/include --with-tcltk-libs=-L${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib -ltclX.Y -L${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib -ltkX.Y
+make -j 2
+make install
+OUT
+}
+
+test_tcltk_var() {
+  local var="${1:?}"
+  cached_tarball "Python-3.6.2"
+
+  stub_tcltk "${tcl_tk_libdir:=$BATS_TEST_TMPDIR/homebrew-tcl-tk}"
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+
+  stub brew '--prefix openssl : false'
+  stub brew "--prefix tcl-tk-custom : echo '$tcl_tk_libdir'"
+  for i in {1..4}; do stub brew false; done
+
+  stub_make_install
+
+  run_inline_definition <<DEF
+$var=tcl-tk-custom
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub sw_vers
+  unstub brew
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH="${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib/pkgconfig"
+Python-3.6.2: --prefix=${BATS_TEST_TMPDIR}/install --enable-shared --libdir=${BATS_TEST_TMPDIR}/install/lib --with-tcltk-includes=-I${BATS_TEST_TMPDIR}/homebrew-tcl-tk/include -I${BATS_TEST_TMPDIR}/homebrew-tcl-tk/include --with-tcltk-libs=-L${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib -ltclX.Y -L${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib -ltkX.Y
+make -j 2
+make install
+OUT
+}
+
+@test "tcl-tk is linked from Homebrew with PYTHON_BUILD_HOMEBREW_TCLTK_FORMULA" {
+  test_tcltk_var PYTHON_BUILD_HOMEBREW_TCLTK_FORMULA
+}
+
+@test "tcl-tk is linked from Homebrew with PYTHON_BUILD_TCLTK_FORMULA" {
+  test_tcltk_var PYTHON_BUILD_TCLTK_FORMULA
+}
+
+@test "PYTHON_BUILD_TCLTK_FORMULA produces a deprecation warning" {
+  cached_tarball "Python-3.6.2"
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+
+  stub brew '--prefix openssl : false'
+  stub brew "--prefix tcl-tk-custom : echo '$tcl_tk_libdir'"
+  for i in {1..4}; do stub brew false; done
+
+  stub_make_install
+
+  run_inline_definition <<DEF
+PYTHON_BUILD_TCLTK_FORMULA=tcl-tk-whatever
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+  assert_line "warning: the PYTHON_BUILD_TCLTK_FORMULA envvar has been renamed to PYTHON_BUILD_HOMEBREW_TCLTK_FORMULA"
+}
+
+@test "tcl-tk is linked from Homebrew via pkg-config and override vars" {
+  cached_tarball "Python-3.6.2" - TCLTK_CFLAGS TCLTK_LIBS
+  stub_tcltk "${tcl_tk_libdir:=$BATS_TEST_TMPDIR/homebrew-tcl-tk}"
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+
+  stub brew '--prefix openssl : false'
+  stub brew "--prefix tcl-tk@8 : echo '$tcl_tk_libdir'"
+  for i in {1..4}; do stub brew false; done
+
+  stub_make_install
+
+  run_inline_definition <<DEF
+PYTHON_BUILD_TCLTK_USE_PKGCONFIG=1
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub sw_vers
+  unstub brew
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH="${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib/pkgconfig"
+Python-3.6.2: --prefix=${BATS_TEST_TMPDIR}/install --enable-shared --libdir=${BATS_TEST_TMPDIR}/install/lib
+Python-3.6.2: TCLTK_CFLAGS=-I${BATS_TEST_TMPDIR}/homebrew-tcl-tk/include -I${BATS_TEST_TMPDIR}/homebrew-tcl-tk/include TCLTK_LIBS=-L${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib -ltclX.Y -L${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib -ltkX.Y
+make -j 2
+make install
+OUT
+}
+
+@test "tcl-tk with external libtommath is linked from Homebrew via pkg-config and override vars" {
+  cached_tarball "Python-3.6.2" - TCLTK_CFLAGS TCLTK_LIBS
+  stub_tcltk "${tcl_tk_libdir:=$BATS_TEST_TMPDIR/homebrew-tcl-tk}"
+  cat >>"$tcl_tk_libdir/lib/tclConfig.sh" <<!
+TCL_DEFS='-DSMTH -DTCL_WITH_EXTERNAL_TOMMATH=1 -DSMTH_ELSE'
+!
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+
+  stub brew '--prefix openssl : false'
+  stub brew "--prefix tcl-tk@8 : echo '$tcl_tk_libdir'"
+  for i in {1..4}; do stub brew false; done
+
+  stub_make_install
+
+  run_inline_definition <<DEF
+PYTHON_BUILD_TCLTK_USE_PKGCONFIG=1
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub sw_vers
+  unstub brew
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH="${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib/pkgconfig"
+Python-3.6.2: --prefix=${BATS_TEST_TMPDIR}/install --enable-shared --libdir=${BATS_TEST_TMPDIR}/install/lib
+Python-3.6.2: TCLTK_CFLAGS=-I${BATS_TEST_TMPDIR}/homebrew-tcl-tk/include -I${BATS_TEST_TMPDIR}/homebrew-tcl-tk/include -DTCL_WITH_EXTERNAL_TOMMATH=1 TCLTK_LIBS=-L${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib -ltclX.Y -L${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib -ltkX.Y
+make -j 2
+make install
+OUT
+}
+
+@test "tcl-tk is not linked from Homebrew when explicitly defined" {
+  cached_tarball "Python-3.6.2"
+
+  # python build
+  tcl_tk_version_long="8.6.10"
+  tcl_tk_version="${tcl_tk_version_long%.*}"
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+
+  stub brew '--prefix openssl : false'
+  for i in {1..4}; do stub brew false; done
+  stub_make_install
+
+  export PYTHON_CONFIGURE_OPTS="--with-tcltk-libs='-L${BATS_TEST_TMPDIR}/custom-tcl-tk/lib -ltcl$tcl_tk_version -ltk$tcl_tk_version'"
+  run_inline_definition <<DEF
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub sw_vers
+  unstub brew
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib --with-tcltk-libs=-L${BATS_TEST_TMPDIR}/custom-tcl-tk/lib -ltcl8.6 -ltk8.6
+make -j 2
+make install
+OUT
+}
+
+@test "tcl-tk is linked from Homebrew via pkgconfig only when envvar is set" {
+  cached_tarball "Python-3.6.2"
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+
+  tcl_tk_libdir="$BATS_TEST_TMPDIR/homebrew-tcl-tk"
+  mkdir -p "$tcl_tk_libdir/lib"
+
+  stub brew '--prefix openssl : false'
+  stub brew "--prefix tcl-tk@8 : echo '${tcl_tk_libdir}'"
+  for i in {1..4}; do stub brew false; done
+
+  stub_make_install
+
+  run_inline_definition <<DEF
+export PYTHON_BUILD_TCLTK_USE_PKGCONFIG=1
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub sw_vers
+  unstub brew
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH="${BATS_TEST_TMPDIR}/homebrew-tcl-tk/lib/pkgconfig"
+Python-3.6.2: --prefix=${BATS_TEST_TMPDIR}/install --enable-shared --libdir=${BATS_TEST_TMPDIR}/install/lib
 make -j 2
 make install
 OUT
@@ -245,14 +1267,11 @@ OUT
 @test "number of CPU cores defaults to 2" {
   cached_tarball "Python-3.6.2"
 
-  # yyuu/pyenv#222
   stub uname '-s : echo Darwin'
   stub sw_vers '-productVersion : echo 10.10'
+  stub brew '--prefix openssl : false'
+  for i in {1..6}; do stub brew false; done
 
-  # yyuu/pyenv#257
-  stub uname '-s : echo Darwin'
-
-  stub uname '-s : echo Darwin' false '-s : echo Darwin'
   stub sysctl false
   stub_make_install
 
@@ -263,11 +1282,13 @@ DEF
   assert_success
 
   unstub uname
+  unstub sw_vers
+  unstub brew
   unstub make
 
   assert_build_log <<OUT
-Python-3.6.2: CPPFLAGS="-I${TMP}/install/include " LDFLAGS="-L${TMP}/install/lib "
-Python-3.6.2: --prefix=$INSTALL_ROOT --libdir=$INSTALL_ROOT/lib
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
 make -j 2
 make install
 OUT
@@ -276,14 +1297,11 @@ OUT
 @test "number of CPU cores is detected on Mac" {
   cached_tarball "Python-3.6.2"
 
-  # yyuu/pyenv#222
   stub uname '-s : echo Darwin'
   stub sw_vers '-productVersion : echo 10.10'
+  stub brew '--prefix openssl : false'
+  for i in {1..6}; do stub brew false; done
 
-  # yyuu/pyenv#257
-  stub uname '-s : echo Darwin'
-
-  stub uname '-s : echo Darwin' false '-s : echo Darwin'
   stub sysctl '-n hw.ncpu : echo 4'
   stub_make_install
 
@@ -294,12 +1312,14 @@ DEF
   assert_success
 
   unstub uname
+  unstub sw_vers
+  unstub brew
   unstub sysctl
   unstub make
 
   assert_build_log <<OUT
-Python-3.6.2: CPPFLAGS="-I${TMP}/install/include " LDFLAGS="-L${TMP}/install/lib "
-Python-3.6.2: --prefix=$INSTALL_ROOT --libdir=$INSTALL_ROOT/lib
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
 make -j 4
 make install
 OUT
@@ -308,10 +1328,10 @@ OUT
 @test "number of CPU cores is detected on FreeBSD" {
   cached_tarball "Python-3.6.2"
 
-  # pyenv/pyenv#1026
-  stub uname false false
+  stub uname '-s : echo FreeBSD'
+  stub uname '-r : echo 11.0-RELEASE'
+  for i in {1..3}; do stub pkg false; done
 
-  stub uname '-s : echo FreeBSD' false false
   stub sysctl '-n hw.ncpu : echo 1'
   stub_make_install
 
@@ -326,8 +1346,8 @@ DEF
   unstub make
 
   assert_build_log <<OUT
-Python-3.6.2: CPPFLAGS="-I${TMP}/install/include " LDFLAGS="-L${TMP}/install/lib "
-Python-3.6.2: --prefix=$INSTALL_ROOT --libdir=$INSTALL_ROOT/lib
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
 make -j 1
 make install
 OUT
@@ -336,10 +1356,8 @@ OUT
 @test "setting PYTHON_MAKE_INSTALL_OPTS to a multi-word string" {
   cached_tarball "Python-3.6.2"
 
-  # pyenv/pyenv#1026
-  stub uname false false false
-
   stub uname '-s : echo Linux'
+
   stub_make_install
 
   export PYTHON_MAKE_INSTALL_OPTS="DOGE=\"such wow\""
@@ -352,23 +1370,21 @@ DEF
   unstub make
 
   assert_build_log <<OUT
-Python-3.6.2: CPPFLAGS="-I${TMP}/install/include " LDFLAGS="-L${TMP}/install/lib "
-Python-3.6.2: --prefix=$INSTALL_ROOT --libdir=$INSTALL_ROOT/lib
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
 make -j 2
 make install DOGE="such wow"
 OUT
 }
 
-@test "setting MAKE_INSTALL_OPTS to a multi-word string" {
+@test "--enable-shared is not added if --disable-shared is passed" {
   cached_tarball "Python-3.6.2"
 
-  # pyenv/pyenv#1026
-  stub uname false false false
-
   stub uname '-s : echo Linux'
+
   stub_make_install
 
-  export MAKE_INSTALL_OPTS="DOGE=\"such wow\""
+  export PYTHON_CONFIGURE_OPTS='--disable-shared'
   run_inline_definition <<DEF
 install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
 DEF
@@ -378,17 +1394,68 @@ DEF
   unstub make
 
   assert_build_log <<OUT
-Python-3.6.2: CPPFLAGS="-I${TMP}/install/include " LDFLAGS="-L${TMP}/install/lib "
-Python-3.6.2: --prefix=$INSTALL_ROOT --libdir=$INSTALL_ROOT/lib
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --libdir=$INSTALL_ROOT/lib --disable-shared
 make -j 2
-make install DOGE="such wow"
+make install
+OUT
+}
+
+@test "configuring with dSYM in MacOS" {
+  cached_tarball "Python-3.6.2"
+
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 1010'
+  stub brew '--prefix openssl : false'
+  for i in {1..6}; do stub brew false; done
+  stub_make_install
+
+  run_inline_definition <<DEF
+export PYTHON_BUILD_CONFIGURE_WITH_DSYMUTIL=1
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub sw_vers
+  unstub uname
+  unstub brew
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=${BATS_TEST_TMPDIR}/install/lib --with-dsymutil
+make -j 2
+make install
+OUT
+}
+
+@test "configuring with dSYM has no effect in non-MacOS" {
+  cached_tarball "Python-3.6.2"
+
+  stub uname '-s : echo Linux'
+  stub_make_install
+
+  run_inline_definition <<DEF
+export PYTHON_BUILD_CONFIGURE_WITH_DSYMUTIL=1
+install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
+DEF
+  assert_success
+
+  unstub uname
+  unstub make
+
+  assert_build_log <<OUT
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=${BATS_TEST_TMPDIR}/install/lib
+make -j 2
+make install
 OUT
 }
 
 @test "custom relative install destination" {
   export PYTHON_BUILD_CACHE_PATH="$FIXTURE_ROOT"
 
-  cd "$TMP"
+  cd "$BATS_TEST_TMPDIR"
   install_fixture definitions/without-checksum ./here
   assert_success
   assert [ -x ./here/bin/package ]
@@ -397,10 +1464,8 @@ OUT
 @test "make on FreeBSD 9 defaults to gmake" {
   cached_tarball "Python-3.6.2"
 
-  stub uname "-s : echo FreeBSD" "-r : echo 9.1" false
-
-  # pyenv/pyenv#1026
-  stub uname false false false
+  stub uname "-s : echo FreeBSD"
+  stub uname "-r : echo 9.1"
 
   MAKE=gmake stub_make_install
 
@@ -414,10 +1479,8 @@ OUT
 @test "make on FreeBSD 10" {
   cached_tarball "Python-3.6.2"
 
-  stub uname "-s : echo FreeBSD" "-r : echo 10.0-RELEASE" false
-
-  # pyenv/pyenv#1026
-  stub uname false false false
+  stub uname "-s : echo FreeBSD"
+  stub uname "-r : echo 10.0-RELEASE"
 
   stub_make_install
 
@@ -430,10 +1493,8 @@ OUT
 @test "make on FreeBSD 11" {
   cached_tarball "Python-3.6.2"
 
-  stub uname "-s : echo FreeBSD" "-r : echo 11.0-RELEASE" false
-
-  # pyenv/pyenv#1026
-  stub uname false false false
+  stub uname "-s : echo FreeBSD"
+  stub uname "-r : echo 11.0-RELEASE"
 
   stub_make_install
 
@@ -446,7 +1507,7 @@ OUT
 @test "can use PYTHON_CONFIGURE to apply a patch" {
   cached_tarball "Python-3.6.2"
 
-  executable "${TMP}/custom-configure" <<CONF
+  executable "${BATS_TEST_TMPDIR}/custom-configure" <<CONF
 #!$BASH
 apply -p1 -i /my/patch.diff
 exec ./configure "\$@"
@@ -456,12 +1517,7 @@ CONF
   stub apply 'echo apply "$@" >> build.log'
   stub_make_install
 
-  # yyuu/pyenv#257
-  stub uname '-s : echo Linux'
-  stub uname '-s : echo Linux'
-  stub uname '-s : echo Linux'
-
-  export PYTHON_CONFIGURE="${TMP}/custom-configure"
+  export PYTHON_CONFIGURE="${BATS_TEST_TMPDIR}/custom-configure"
   run_inline_definition <<DEF
 install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz"
 DEF
@@ -473,8 +1529,8 @@ DEF
 
   assert_build_log <<OUT
 apply -p1 -i /my/patch.diff
-Python-3.6.2: CPPFLAGS="-I${TMP}/install/include " LDFLAGS="-L${TMP}/install/lib "
-Python-3.6.2: --prefix=$INSTALL_ROOT --libdir=$INSTALL_ROOT/lib
+Python-3.6.2: CFLAGS="" CPPFLAGS="-I${BATS_TEST_TMPDIR}/install/include" LDFLAGS="-L${BATS_TEST_TMPDIR}/install/lib -Wl,-rpath,${BATS_TEST_TMPDIR}/install/lib" PKG_CONFIG_PATH=""
+Python-3.6.2: --prefix=$INSTALL_ROOT --enable-shared --libdir=$INSTALL_ROOT/lib
 make -j 2
 make install
 OUT
@@ -486,6 +1542,7 @@ OUT
   mkdir -p "$INSTALL_ROOT/bin"
   touch "$INSTALL_ROOT/bin/package"
   chmod -w "$INSTALL_ROOT/bin/package"
+  skip_if_nonposix_security -w "$INSTALL_ROOT/bin/package"
 
   install_fixture definitions/without-checksum
   assert_success
@@ -494,83 +1551,24 @@ OUT
   assert_success "hello world"
 }
 
-@test "mruby strategy overwrites non-writable files" {
-  # nop
-}
-
-@test "mruby strategy fetches rake if missing" {
-  # nop
-}
-
-@test "rbx uses bundle then rake" {
-  # nop
-}
-
-@test "fixes rbx binstubs" {
-  # nop
-}
-
-@test "JRuby build" {
-  # nop
-}
-
-@test "JRuby+Graal does not install launchers" {
-  # nop
-}
-
-@test "JRuby Java 7 missing" {
-  # nop
-}
-
-@test "JRuby Java is outdated" {
-  # nop
-}
-
-@test "JRuby Java 7 up-to-date" {
-  # nop
-}
-
-@test "Java version string not on first line" {
-  # nop
-}
-
-@test "Java version string on OpenJDK" {
-  # nop
-}
-
-@test "JRuby Java 9 version string" {
-  # nop
-}
-
-@test "non-writable TMPDIR aborts build" {
-  export TMPDIR="${TMP}/build"
+@test "non-writable BATS_TEST_TMPDIRDIR aborts build" {
+  export TMPDIR="${BATS_TEST_TMPDIR}/build"
   mkdir -p "$TMPDIR"
   chmod -w "$TMPDIR"
+  skip_if_nonposix_security -w "$TMPDIR"
 
-  touch "${TMP}/build-definition"
-  run python-build "${TMP}/build-definition" "$INSTALL_ROOT"
+  touch "${BATS_TEST_TMPDIR}/build-definition"
+  run python-build "${BATS_TEST_TMPDIR}/build-definition" "$INSTALL_ROOT"
   assert_failure "python-build: TMPDIR=$TMPDIR is set to a non-accessible location"
 }
 
 @test "non-executable TMPDIR aborts build" {
-  export TMPDIR="${TMP}/build"
+  export TMPDIR="${BATS_TEST_TMPDIR}/build"
   mkdir -p "$TMPDIR"
   chmod -x "$TMPDIR"
+  skip_if_nonposix_security -x "$TMPDIR"
 
-  touch "${TMP}/build-definition"
-  run python-build "${TMP}/build-definition" "$INSTALL_ROOT"
+  touch "${BATS_TEST_TMPDIR}/build-definition"
+  run python-build "${BATS_TEST_TMPDIR}/build-definition" "$INSTALL_ROOT"
   assert_failure "python-build: TMPDIR=$TMPDIR is set to a non-accessible location"
-}
-
-@test "initializes LDFLAGS directories" {
-  cached_tarball "Python-3.6.2"
-
-  export LDFLAGS="-L ${BATS_TEST_DIRNAME}/what/evs"
-  run_inline_definition <<DEF
-install_package "Python-3.6.2" "http://python.org/ftp/python/3.6.2/Python-3.6.2.tar.gz" ldflags_dirs
-DEF
-  assert_success
-
-  assert [ -d "${INSTALL_ROOT}/lib" ]
-  assert [ -d "${BATS_TEST_DIRNAME}/what/evs" ]
 }

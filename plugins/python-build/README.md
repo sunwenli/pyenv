@@ -24,7 +24,7 @@ Installing python-build as a standalone program will give you access to the
 `python-build` command for precise control over Python version installation. If you
 have pyenv installed, you will also be able to use the `pyenv install` command.
 
-    git clone git://github.com/pyenv/pyenv.git
+    git clone https://github.com/pyenv/pyenv.git
     cd pyenv/plugins/python-build
     ./install.sh
 
@@ -54,8 +54,11 @@ Or, if you would like to install the latest development release:
 
 ## Usage
 
-Before you begin, you should ensure that your build environment has the proper
-system dependencies for compiling the wanted Python Version (see our [recommendations](https://github.com/pyenv/pyenv/wiki#suggested-build-environment)).
+On Ubuntu, Debian, and Mint, install the recommended build dependencies with:
+
+    pyenv install-prerequisites
+
+For other environments, see our [build environment recommendations](https://github.com/pyenv/pyenv/wiki#suggested-build-environment).
 
 ### Using `pyenv install` with pyenv
 
@@ -66,6 +69,13 @@ exact name of the version you want to install. For example,
 
 Python versions will be installed into a directory of the same name under
 `~/.pyenv/versions`.
+
+To install a version under a different name -- for instance, to keep several
+builds of the same version side by side -- append `:<alias>` to the version:
+
+    pyenv install 3.12.0:3.12-custom
+
+This installs into `~/.pyenv/versions/3.12-custom`.
 
 To see a list of all available Python versions, run `pyenv install --list`. You
 may also tab-complete available Python versions if your pyenv installation is
@@ -96,7 +106,64 @@ versions of Python that are not yet supported by python-build.
 See the [python-build built-in definitions](https://github.com/pyenv/pyenv/tree/master/plugins/python-build/share/python-build) as a starting point for
 custom definition files.
 
-[definitions]: https://github.com/pyenv/pyenv/tree/master/plugins/python-build/share/python-build
+#### Adding definitions with a Pyenv plugin
+
+You can add your own definitions with a [Pyenv plugin](https://github.com/pyenv/pyenv?tab=readme-ov-file#pyenv-plugins) by placing them under
+`$PYENV_ROOT/plugins/your_plugin_name/share/python-build`.
+
+### Default build configuration
+
+Without the user customizing the build with environment variables (see below),
+`python-build` builds Python with mostly default Configure options
+to maintain the principle of the least surprise.
+
+The exceptions -- non-default options that are set by default -- are listed below:
+
+| Option/Behavior | Rationale |
+|-----------------|-----------|
+| `--enable-shared` is on by default. Pass `--disable-shared` to Configure options to override | The official CPython Docker image uses it. It's required to embed CPython. |
+| argument to `--enable-universalsdk` is ignored and set to `/` | 
+| `--with-universal-archs` defaults to `universal2` on ARM64 architecture | the only dual-architecture Macs in use today are Apple Silicon which can only build that one |
+| argument to `--enable-framework` is ignored and set to a specific value | CPython's build logic requires a very specific argument to avoid installing the `Applications` part globally |
+| argument to `--enable-unicode` in non-MacOS is overridden to `ucs4` for 2.x-3.3 |
+| `MACOSX_DEPLOYMENT_TARGET` defaults to the running MacOS version |
+
+
+#### Integration with 3rd-party package ecosystems
+
+##### Homebrew
+
+Homebrew is used to find dependency packages if `brew` is found on `PATH`:
+* In MacOS, or
+* If the running Pyenv itself is installed with Homebrew
+
+Set `PYTHON_BUILD_USE_HOMEBREW` or `PYTHON_BUILD_SKIP_HOMEBREW` to override this default.
+
+When Homebrew is used, its `include` and `lib` paths are added to compiler search path (the latter is also set as `rpath`),
+and also Python dependencies that are typically keg-only are searched for in the Homebrew installation and added individually.
+
+**NOTE:** Homebrew is not used in Linux by default because it's rolling-release which causes a problem.
+Upgrading a Python dependency in Homebrew to a new major version (that `brew` does without warning)
+would break all Pyenv-managed installations that depend on it.
+You can use a [community plugin `fix-version`](https://github.com/pyenv/pyenv/wiki/Plugins#community-plugins)
+to fix installations in such a case.
+
+##### MacPorts
+
+MacPorts Homebrew is used to find dependency packages if `port` is found on `PATH` in MacOS.
+
+Set `PYTHON_BUILD_USE_MACPORTS` or `PYTHON_BUILD_SKIP_MACPORTS` to override this default.
+
+###### Interaction with Homebrew
+
+If both Homebrew and MacPorts are installed and allowed to be used, Homebrew takes preference.
+There first ecosystem where any of the required dependency packages is found is used.
+
+##### Portage
+
+In FreeBSD, if `pkg` is on PATH, Ports are searched for some dependencies that Configure is known to not search for via `pkg-config`.
+(Later versions of CPython search for more packages via `pkg-config` so this may eventually become redundant.)
+
 
 ### Special environment variables
 
@@ -109,25 +176,32 @@ You can set certain environment variables to control the build process.
   downloaded package files.
 * `PYTHON_BUILD_MIRROR_URL` overrides the default mirror URL root to one of your
   choosing.
-* `PYTHON_BUILD_MIRROR_URL_SKIP_CHECKSUM`, if set, does not append the SHA2
-  checksum of the file to the mirror URL.
+* `PYTHON_BUILD_MIRROR_URL_SKIP_CHECKSUM`, if set, changes the expected mirror structure
+  to a regular mirror of https://www.python.org/ftp/python or of a different site specified in `URL_BASE`.
 * `PYTHON_BUILD_SKIP_MIRROR`, if set, forces python-build to download packages from
   their original source URLs instead of using a mirror.
+* `PYTHON_BUILD_HTTP_CLIENT`, explicitly specify the HTTP client type to use. `aria2`, `curl` and `wget` are the supported values and by default, are searched in that order.
+* `PYTHON_BUILD_CURL_OPTS`, `PYTHON_BUILD_WGET_OPTS`, `PYTHON_BUILD_ARIA2_OPTS` pass additional parameters to the corresponding HTTP client.
+* `PYTHON_BUILD_SKIP_HOMEBREW`, if set, will not search for libraries installed by Homebrew when it normally would.
+* `PYTHON_BUILD_USE_HOMEBREW`, if set, will search for libraries installed by Homebrew when it normally wouldn't.
+* `PYTHON_BUILD_HOMEBREW_OPENSSL_FORMULA`, override the Homebrew OpenSSL formula to use.
+* `PYTHON_BUILD_MACPORTS_OPENSSL_FORMULA`, override the MacPorts OpenSSL formula to use. The default is `openssl3 openssl`.
+* `PYTHON_BUILD_HOMEBREW_TCLTK_FORMULA`, override the Homebrew Tcl/Tk formula to use.
+* `PYTHON_BUILD_SKIP_MACPORTS`, if set, will not search for libraries installed by MacPorts when it normally would.
+* `PYTHON_BUILD_USE_MACPORTS`, if set, will search for libraries installed by MacPorts when it normally wouldn't.
 * `PYTHON_BUILD_ROOT` overrides the default location from where build definitions
   in `share/python-build/` are looked up.
 * `PYTHON_BUILD_DEFINITIONS` can be a list of colon-separated paths that get
   additionally searched when looking up build definitions.
 * `CC` sets the path to the C compiler.
-* `PYTHON_CFLAGS` lets you pass additional options to the default `CFLAGS`. Use
-  this to override, for instance, the `-O3` option.
 * `CONFIGURE_OPTS` lets you pass additional options to `./configure`.
 * `MAKE` lets you override the command to use for `make`. Useful for specifying
   GNU make (`gmake`) on some systems.
 * `MAKE_OPTS` (or `MAKEOPTS`) lets you pass additional options to `make`.
 * `MAKE_INSTALL_OPTS` lets you pass additional options to `make install`.
-* `PYTHON_CONFIGURE_OPTS` and `PYTHON_MAKE_OPTS` and `PYTHON_MAKE_INSTALL_OPTS` allow
-  you to specify configure and make options for building CPython. These variables
-  will be passed to Python only, not any dependent packages (e.g. libyaml).
+* `<PACKAGE>_CFLAGS`, `<PACKAGE>_CPPFLAGS`, `<PACKAGE>_LDFLAGS` let you pass additional options to `CFLAGS`/`CPPFLAGS`/`LDFLAGS` specifically for building `<package>` (Python itself or a dependency library) from source as part of the build script. `<PACKAGE>` should be a capitalized name of the package without version (technically, capitalized first argument to `install_package` without version). E.g. for CPython, it's "`PYTHON`", for Readline, "`READLINE`", for PyPy (only applies when building it from source), "`PYPY`". Check the source of the build script you're using if unsure.
+* `<PACKAGE>_CONFIGURE_OPTS`, `<PACKAGE>_MAKE_OPTS`, `<PACKAGE>_MAKE_INSTALL_OPTS`, `<PACKAGE>_MAKE_INSTALL_TARGET` allow
+  you to specify configure and make options for building `<package>` (same as above). "Make install target" would replace "`install`" in the `make install` invocation.
 
 ### Applying patches to Python before compiling
 
@@ -149,19 +223,20 @@ $ cat fix1.patch fix2.patch | pyenv install --patch 2.7.10
 ```
 
 
-### Building with `--enable-shared`
+### Building for maximum performance
 
-You can build CPython with `--enable-shared` to install a version with
-shared object.
-
-If `--enable-shared` was found in `PYTHON_CONFIGURE_OPTS` or `CONFIGURE_OPTS`,
-`python-build` will automatically set `RPATH` to the pyenv's prefix directory.
-This means you don't have to set `LD_LIBRARY_PATH` or `DYLD_LIBRARY_PATH` for
-the version(s) installed with `--enable-shared`.
+Building CPython with `--enable-optimizations` will result in a faster
+interpreter at the cost of significantly longer build times. Most notably, this
+enables PGO (profile guided optimization). While your mileage may vary, it is
+common for performance improvement from this to be in the ballpark of 30%.
 
 ```sh
-$ env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.9
+env PYTHON_CONFIGURE_OPTS='--enable-optimizations --with-lto' PYTHON_CFLAGS='-march=native -mtune=native' pyenv install --verbose 3.6.0
 ```
+
+You can also customize the task used for profile guided optimization by setting
+the `PROFILE_TASK` environment variable, for instance, `PROFILE_TASK='-m
+test.regrtest --pgo -j0'` will run much faster than the default task.
 
 ### Checksum verification
 
@@ -175,18 +250,36 @@ definition. (All bundled definitions include checksums.)
 ### Package download mirrors
 
 python-build will first attempt to download package files from a mirror hosted on
-GitHub Pages. If a package is not available on the mirror, if the mirror
-is down, or if the download is corrupt, python-build will fall back to the
+GitHub Pages. If this fails, it will fall back to the
 official URL specified in the definition file.
 
 You can point python-build to another mirror by specifying the
-`PYTHON_BUILD_MIRROR_URL` environment variable--useful if you'd like to run your
-own local mirror, for example. Package mirror URLs are constructed by joining
-this variable with the SHA2 checksum of the package file.
+`PYTHON_BUILD_MIRROR_URL` environment variable.
 
-If the mirror being used does not have the same checksum (*e.g.* with a
-pull-through cache like Artifactory), you can set the
-`PYTHON_BUILD_MIRROR_URL_SKIP_CHECKSUM` environment variable.
+Package mirror URLs are constructed by joining
+`$PYTHON_BUILD_MIRROR_URL` with the SHA2 checksum of the package file as specified in the URL
+in the installation script (the part after the hash sign). E.g.:
+
+```
+https://mycache.example.com/0419e9085bf51b7a672009b3f50dbf1859acdf18ba725d0ec19aa5c8503f0ea3
+```
+
+If you have replicated the directory structure of an official site, the easiest way to adapt
+would be to make symlinks at the mirror's root:
+
+```
+0419e9085bf51b7a672009b3f50dbf1859acdf18ba725d0ec19aa5c8503f0ea3 -> 3.10.10/Python-3.10.10.tar.xz
+```
+
+The rationale is to abstract away difference between directory structures of sites
+of various Python flavors and their occasional changes as well as to accommodate
+people who only wish to cache some select downloads. This also allows to mirror multiple sites at once.
+
+As a workaround, with `PYTHON_BUILD_MIRROR_URL_SKIP_CHECKSUM` set, the expected mirror structure
+changes to a regular mirror of https://www.python.org/ftp/python, or of a different site specified by `URL_BASE`.
+The name is a historical misnomer, coming from the idea that with it,
+file hash is not appended to the mirror download URL.
+This feature is considered for deprecation in favor of a [better solution](https://github.com/pyenv/pyenv/issues/3348).
 
 If you don't have an SHA2 program installed, python-build will skip the download
 mirror and use official URLs instead. You can force python-build to bypass the
@@ -195,15 +288,15 @@ mirror by setting the `PYTHON_BUILD_SKIP_MIRROR` environment variable.
 The official python-build download mirror is provided by
 [GitHub Pages](http://yyuu.github.io/pythons/).
 
-### Package download caching
+### Package download cache
 
-You can instruct python-build to keep a local cache of downloaded package files
-by setting the `PYTHON_BUILD_CACHE_PATH` environment variable. When set, package
-files will be kept in this directory after the first successful download and
-reused by subsequent invocations of `python-build` and `pyenv install`.
+Python-build will keep a cache of downloaded package files
+at the location specified by the `PYTHON_BUILD_CACHE_PATH` environment variable
+if it exists. The default is `~/.pyenv/cache`, so you can
+enable caching by just creating that directory.
 
-The `pyenv install` command defaults this path to `~/.pyenv/cache`, so in most
-cases you can enable download caching simply by creating that directory.
+The name of the would-be cached file is reported by Pyenv in the "Downloading &lt;filename&gt;..." message.
+It's possible to warm up the cache by manually putting the file there under an appropriate name.
 
 ### Keeping the build directory after installation
 
@@ -231,7 +324,7 @@ the full build log for build failures.
 
 ### Testing new python versions
 
-If you are contributing a new python version for python-build, 
+If you are contributing a new python version for python-build,
 you can test the build in a [docker](https://www.docker.com/) container based on Ubuntu 18.04.
 
 With docker installed:
@@ -249,7 +342,7 @@ docker run -it my_container
 ```
 
 The container will need to be rebuilt whenever you change the repo,
-but after the first build, this will be very fast, 
+but after the first build, this will be very fast,
 as the layer including the build dependencies will be cached.
 
 Changes made inside the container will not be persisted.
@@ -273,4 +366,3 @@ git diff --name-only master \
 - Filter out any which don't live where python-build keeps its build scripts
 - Look only at the file name (i.e. the python version name)
 - Run a new docker container for each, building that version
-

@@ -2,42 +2,39 @@
 
 load test_helper
 
-create_executable() {
-  name="${1?}"
-  shift 1
-  bin="${PYENV_ROOT}/versions/${PYENV_VERSION}/bin"
-  mkdir -p "$bin"
-  { if [ $# -eq 0 ]; then cat -
-    else echo "$@"
-    fi
-  } | sed -Ee '1s/^ +//' > "${bin}/$name"
-  chmod +x "${bin}/$name"
-}
-
 @test "fails with invalid version" {
+  bats_require_minimum_version 1.5.0
   export PYENV_VERSION="3.4"
-  run pyenv-exec python -V
-  assert_failure "pyenv: version \`3.4' is not installed (set by PYENV_VERSION environment variable)"
+  run -127 pyenv-exec nonexistent
+  assert_failure <<EOF
+pyenv: version \`3.4' is not installed (set by PYENV_VERSION environment variable)
+pyenv: nonexistent: command not found
+EOF
 }
 
 @test "fails with invalid version set from file" {
+  bats_require_minimum_version 1.5.0
   mkdir -p "$PYENV_TEST_DIR"
   cd "$PYENV_TEST_DIR"
   echo 2.7 > .python-version
-  run pyenv-exec rspec
-  assert_failure "pyenv: version \`2.7' is not installed (set by $PWD/.python-version)"
+  run -127 pyenv-exec nonexistent
+  assert_failure <<EOF
+pyenv: version \`2.7' is not installed (set by $PWD/.python-version)
+pyenv: nonexistent: command not found
+EOF
 }
 
 @test "completes with names of executables" {
   export PYENV_VERSION="3.4"
-  create_executable "fab" "#!/bin/sh"
-  create_executable "python" "#!/bin/sh"
+  create_alt_executable "fab"
+  create_alt_executable "python"
 
   pyenv-rehash
   run pyenv-completions exec
   assert_success
   assert_output <<OUT
 --help
+--environment
 fab
 python
 OUT
@@ -57,7 +54,7 @@ SH
 
 @test "forwards all arguments" {
   export PYENV_VERSION="3.4"
-  create_executable "python" <<SH
+  create_alt_executable "python" <<SH
 #!$BASH
 echo \$0
 for arg; do
@@ -79,37 +76,117 @@ OUT
 }
 
 @test "sys.executable with system version (#98)" {
-  system_python=$(which python)
+  create_path_executable "python3" "echo system"
 
-  PYENV_VERSION="custom"
-  create_executable "python" ""
-  unset PYENV_VERSION
+  system_python="$(python3 </dev/null)"
+  assert_equal "${system_python}" "system"
+
+  export PYENV_VERSION="custom"
+  create_alt_executable "python3" "echo custom"
 
   pyenv-rehash
-  run pyenv-exec python -c 'import sys; print(sys.executable)'
-  assert_success "${system_python}"
+
+  custom_python="$(pyenv-exec python3)"
+  assert_equal "${custom_python}" "custom"
 }
 
-@test '$PATH is not modified with system Python' {
+@test 'PATH is not modified with system Python' {
   # Create a wrapper executable that verifies PATH.
-  PYENV_VERSION="custom"
-  create_executable "python" '[[ "$PATH" == "${PYENV_TEST_DIR}/root/versions/custom/bin:"* ]] || { echo "unexpected:$PATH"; exit 2;}'
-  unset PYENV_VERSION
+  create_alt_executable_in_version "custom" "python3" <<!
+[[ \$PATH == "\${PYENV_ROOT}/versions/custom/bin:"* ]] \
+  || { echo "unexpected:\$PATH"; exit 2;}
+!
   pyenv-rehash
 
   # Path is not modified with system Python.
-  run pyenv-exec python -c 'import os; print(os.getenv("PATH"))'
+  create_path_executable "python3" "echo \$PATH"
+
+  pyenv-rehash
+  run pyenv-exec python3
   assert_success "$PATH"
 
   # Path is modified with custom Python.
-  PYENV_VERSION=custom run pyenv-exec python
+  PYENV_VERSION=custom run pyenv-exec python3
   assert_success
 
   # Path is modified with custom:system Python.
-  PYENV_VERSION=custom:system run pyenv-exec python
+  PYENV_VERSION=custom:system run pyenv-exec python3
   assert_success
 
   # Path is not modified with system:custom Python.
-  PYENV_VERSION=system:custom run pyenv-exec python -c 'import os; print(os.getenv("PATH"))'
+  PYENV_VERSION=system:custom run pyenv-exec python3
   assert_success "$PATH"
+}
+
+@test "sets/adds to _PYENV_SHIM_PATHS_{PROGRAM} when _PYENV_SHIM_PATH is set, unsets _PYENV_SHIM_PATH" {
+  progname='123;wacky-prog.name ^%$#'
+  envvarname="_PYENV_SHIM_PATHS_123_WACKY_PROG_NAME_____"
+  create_path_executable "$progname" <<!
+echo $envvarname="\$$envvarname"
+echo _PYENV_SHIM_PATH="\$_PYENV_SHIM_PATH"
+!
+  _PYENV_SHIM_PATH=/unusual/shim/location run pyenv-exec "$progname"
+  assert_success
+  assert_output <<!
+$envvarname=/unusual/shim/location
+_PYENV_SHIM_PATH=
+!
+
+  eval "export ${envvarname}=/another/shim/location"
+  _PYENV_SHIM_PATH=/unusual/shim/location run pyenv-exec "$progname"
+  assert_success
+  assert_output <<!
+$envvarname=/unusual/shim/location:/another/shim/location
+_PYENV_SHIM_PATH=
+!
+}
+
+@test "--environment sets envvars in Linux" {
+  export PYENV_VERSION="test"
+  create_alt_executable print_env <<!
+#!$BASH
+echo PYTHONHOME="\$PYTHONHOME"
+echo LD_LIBRARY_PATH="\$LD_LIBRARY_PATH"
+!
+  create_path_executable uname "echo Linux"
+
+  LD_LIBRARY_PATH= run pyenv-exec -N print_env
+  assert_output_glob <<!
+PYTHONHOME=*/test
+LD_LIBRARY_PATH=*/test/lib
+!
+
+  LD_LIBRARY_PATH=/foo/bar run pyenv-exec -N print_env
+  assert_output_glob <<!
+PYTHONHOME=*/test
+LD_LIBRARY_PATH=*/test/lib:/foo/bar
+!
+}
+
+@test "--environment sets envvars in macOS" {
+  if [[ $(uname -s) == "Darwin" && $BASH == "/bin/bash" \
+      && $(LC_ALL=C csrutil status) == *"enabled." ]]; then
+    skip "macOS with Bash covered by SIP"
+  fi
+
+  export PYENV_VERSION="test"
+  create_alt_executable print_env <<!
+#!$BASH
+echo PYTHONHOME="\$PYTHONHOME"
+echo DYLD_LIBRARY_PATH="\$DYLD_LIBRARY_PATH"
+!
+  create_path_executable uname "echo Darwin"
+
+  DYLD_LIBRARY_PATH= run pyenv-exec -N print_env
+  assert_output_glob <<!
+PYTHONHOME=*/test
+DYLD_LIBRARY_PATH=*/test/lib
+!
+
+
+  DYLD_LIBRARY_PATH=/foo/bar run pyenv-exec -N print_env
+  assert_output_glob <<!
+PYTHONHOME=*/test
+DYLD_LIBRARY_PATH=*/test/lib:/foo/bar
+!
 }

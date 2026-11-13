@@ -2,13 +2,6 @@
 
 load test_helper
 
-create_executable() {
-  local bin="${PYENV_ROOT}/versions/${1}/bin"
-  mkdir -p "$bin"
-  touch "${bin}/$2"
-  chmod +x "${bin}/$2"
-}
-
 @test "empty rehash" {
   assert [ ! -d "${PYENV_ROOT}/shims" ]
   run pyenv-rehash
@@ -20,6 +13,8 @@ create_executable() {
 @test "non-writable shims directory" {
   mkdir -p "${PYENV_ROOT}/shims"
   chmod -w "${PYENV_ROOT}/shims"
+  skip_if_nonposix_security -w "${PYENV_ROOT}/shims"
+
   run pyenv-rehash
   assert_failure "pyenv: cannot rehash: ${PYENV_ROOT}/shims isn't writable"
 }
@@ -28,8 +23,13 @@ create_executable() {
   export PYENV_REHASH_TIMEOUT=1
   mkdir -p "${PYENV_ROOT}/shims"
   touch "${PYENV_ROOT}/shims/.pyenv-shim"
-  run pyenv-rehash
-  assert_failure "pyenv: cannot rehash: ${PYENV_ROOT}/shims/.pyenv-shim exists"
+  #avoid failure due to a localized error message
+  LANG=C run pyenv-rehash
+  assert_failure
+  assert_output_glob <<!
+pyenv: cannot rehash: couldn't acquire lock ${PYENV_ROOT}/shims/.pyenv-shim for 1 seconds. Last error message:
+*/pyenv-rehash: line *: ${PYENV_ROOT}/shims/.pyenv-shim: cannot overwrite existing file
+!
 }
 
 @test "wait until lock acquisition" {
@@ -41,11 +41,22 @@ create_executable() {
   assert_success
 }
 
+@test "removes stale lockfile" {
+  mkdir -p "${PYENV_ROOT}/shims"
+  # A portable code to set mtime to "N minutes ago" is long and unwieldy,
+  # see https://unix.stackexchange.com/questions/806015/portably-set-a-files-time-to-n-minutes-ago
+  # Using a fixed timestamp far in the past is infinitely simpler and good enough for the test
+  touch -t 200001010000.00 "${PYENV_ROOT}/shims/.pyenv-shim"
+  run pyenv-rehash
+  assert_success ""
+  assert [ ! -e "${PYENV_ROOT}/shims/.pyenv-shim" ]
+}
+
 @test "creates shims" {
-  create_executable "2.7" "python"
-  create_executable "2.7" "fab"
-  create_executable "3.4" "python"
-  create_executable "3.4" "py.test"
+  create_alt_executable_in_version "2.7" "python"
+  create_alt_executable_in_version "2.7" "fab"
+  create_alt_executable_in_version "3.4" "python"
+  create_alt_executable_in_version "3.4" "py.test"
 
   assert [ ! -e "${PYENV_ROOT}/shims/fab" ]
   assert [ ! -e "${PYENV_ROOT}/shims/python" ]
@@ -68,8 +79,8 @@ OUT
   touch "${PYENV_ROOT}/shims/oldshim1"
   chmod +x "${PYENV_ROOT}/shims/oldshim1"
 
-  create_executable "3.4" "fab"
-  create_executable "3.4" "python"
+  create_alt_executable_in_version "3.4" "fab"
+  create_alt_executable_in_version "3.4" "python"
 
   run pyenv-rehash
   assert_success ""
@@ -77,9 +88,173 @@ OUT
   assert [ ! -e "${PYENV_ROOT}/shims/oldshim1" ]
 }
 
+@test "repairs an overwritten shim after the first shim" {
+  create_alt_executable_in_version "3.4" "aaa"
+  create_alt_executable_in_version "3.4" "python"
+  pyenv-rehash
+  printf '2\n' > "${PYENV_ROOT}/shims/python"
+
+  run pyenv-rehash
+  assert_success ""
+  assert cmp "${PYENV_ROOT}/shims/aaa" "${PYENV_ROOT}/shims/python"
+
+  PYENV_VERSION=3.4 run "${PYENV_ROOT}/shims/python"
+  assert_success
+}
+
+@test "repairs truncated shim contents and preserves trailing newlines" {
+  create_alt_executable_in_version "3.4" "aaa"
+  create_alt_executable_in_version "3.4" "python"
+  pyenv-rehash
+
+  for contents in empty newline nul; do
+    case "$contents" in
+      empty) : > "${PYENV_ROOT}/shims/python" ;;
+      newline) printf '\n' >> "${PYENV_ROOT}/shims/python" ;;
+      nul) printf '\0' >> "${PYENV_ROOT}/shims/python" ;;
+    esac
+    run pyenv-rehash
+    assert_success ""
+    assert cmp "${PYENV_ROOT}/shims/aaa" "${PYENV_ROOT}/shims/python"
+  done
+}
+
+@test "leaves valid shims unchanged when repairing another shim" {
+  create_alt_executable_in_version "3.4" "aaa"
+  create_alt_executable_in_version "3.4" "python"
+  pyenv-rehash
+  touch -t 200001010000.00 "${PYENV_ROOT}/shims/aaa"
+  touch -t 200101010000.00 "${PYENV_TEST_DIR}/newer"
+  printf '2\n' > "${PYENV_ROOT}/shims/python"
+
+  run pyenv-rehash
+  assert_success ""
+  assert [ "${PYENV_ROOT}/shims/aaa" -ot "${PYENV_TEST_DIR}/newer" ]
+  assert cmp "${PYENV_ROOT}/shims/aaa" "${PYENV_ROOT}/shims/python"
+}
+
+@test "repairs an unreadable shim without additional output" {
+  create_alt_executable_in_version "3.4" "aaa"
+  create_alt_executable_in_version "3.4" "python"
+  pyenv-rehash
+  chmod -r "${PYENV_ROOT}/shims/python"
+  skip_if_nonposix_security -r "${PYENV_ROOT}/shims/python"
+
+  run pyenv-rehash
+  assert_success ""
+  assert cmp "${PYENV_ROOT}/shims/aaa" "${PYENV_ROOT}/shims/python"
+}
+
+@test "does not read registered directories as shims" {
+  create_alt_executable_in_version "3.4" "aaa"
+  create_alt_executable_in_version "3.4" "python"
+  pyenv-rehash
+  rm "${PYENV_ROOT}/shims/python"
+  mkdir "${PYENV_ROOT}/shims/python"
+
+  run pyenv-rehash
+  assert_success ""
+  assert [ -d "${PYENV_ROOT}/shims/python" ]
+}
+
+@test "leaves valid shims unchanged with a multibyte root path" {
+  [[ $(LC_ALL=en_US.UTF-8 locale charmap 2>/dev/null) == UTF-8 ]] || skip "-- UTF-8 locale not installed"
+  export LC_ALL=en_US.UTF-8
+  export PYENV_ROOT="${PYENV_ROOT}/pyenv 路径"
+  create_alt_executable_in_version "3.4" "python"
+  pyenv-rehash
+  touch -t 200001010000.00 "${PYENV_ROOT}/shims/python"
+  touch -t 200101010000.00 "${PYENV_TEST_DIR}/newer"
+
+  run pyenv-rehash
+  assert_success ""
+  assert [ "${PYENV_ROOT}/shims/python" -ot "${PYENV_TEST_DIR}/newer" ]
+}
+
+@test "repairs explicitly registered hidden shims and preserves other dotfiles" {
+  create_hook rehash hidden.bash <<'SH'
+register_shim .foo
+register_shim python
+SH
+  pyenv-rehash
+  printf 'keep\n' > "${PYENV_ROOT}/shims/.keep"
+  printf '2\n' > "${PYENV_ROOT}/shims/.foo"
+
+  run pyenv-rehash
+  assert_success ""
+  assert cmp "${PYENV_ROOT}/shims/python" "${PYENV_ROOT}/shims/.foo"
+  run cat "${PYENV_ROOT}/shims/.keep"
+  assert_success "keep"
+  assert [ ! -e "${PYENV_ROOT}/shims/.pyenv-shim" ]
+}
+
+@test "replaces a dangling registered symlink without writing through it" {
+  create_alt_executable_in_version "3.4" "aaa"
+  create_alt_executable_in_version "3.4" "python"
+  pyenv-rehash
+  rm "${PYENV_ROOT}/shims/python"
+  ln -s "${PYENV_TEST_DIR}/missing/python" "${PYENV_ROOT}/shims/python"
+
+  run pyenv-rehash
+  assert_success ""
+  assert [ ! -L "${PYENV_ROOT}/shims/python" ]
+  assert [ ! -e "${PYENV_TEST_DIR}/missing/python" ]
+  assert cmp "${PYENV_ROOT}/shims/aaa" "${PYENV_ROOT}/shims/python"
+}
+
+@test "preserves sourceable shims from the built-in rehash hook" {
+  export PYENV_HOOK_PATH="${_PYENV_INSTALL_PREFIX}/pyenv.d"
+  export PYENV_VERSION=3.4
+  create_alt_executable_in_version "3.4" "aaa"
+  create_alt_executable_in_version "3.4" "activate" <<'SH'
+export PYENV_ACTIVATED=yes
+SH
+  create_alt_executable_in_version "3.4" "activate.fish"
+  create_alt_executable_in_version "3.4" "gettext.sh"
+
+  pyenv-rehash
+  run pyenv-rehash
+  assert_success ""
+  assert cmp "${PYENV_ROOT}/shims/activate" "${PYENV_ROOT}/shims/activate.fish"
+  assert cmp "${PYENV_ROOT}/shims/activate" "${PYENV_ROOT}/shims/gettext.sh"
+
+  run bash -c '. "$PYENV_ROOT/shims/activate"; echo "$PYENV_ACTIVATED"'
+  assert_success "yes"
+}
+
+@test "does not overwrite hook customizations when a shim is registered again" {
+  create_alt_executable_in_version "3.4" "python"
+  create_hook rehash custom.bash <<'SH'
+register_shim .foo
+printf 'custom\n' > "$SHIM_PATH/.foo"
+printf 'custom\n' > "$SHIM_PATH/python"
+register_shim python
+register_shim .foo
+SH
+
+  run pyenv-rehash
+  assert_success ""
+  run cat "${PYENV_ROOT}/shims/python"
+  assert_success "custom"
+  run cat "${PYENV_ROOT}/shims/.foo"
+  assert_success "custom"
+}
+
+@test "repairs existing shims before rehash hooks invoke them" {
+  create_alt_executable_in_version "3.4" "python" "echo works"
+  pyenv-rehash
+  printf '2\n' > "${PYENV_ROOT}/shims/python"
+  create_hook rehash invoke.bash <<'SH'
+PYENV_VERSION=3.4 "$SHIM_PATH/python"
+SH
+
+  run pyenv-rehash
+  assert_success "works"
+}
+
 @test "binary install locations containing spaces" {
-  create_executable "dirname1 p247" "python"
-  create_executable "dirname2 preview1" "py.test"
+  create_alt_executable_in_version "dirname1 p247" "python"
+  create_alt_executable_in_version "dirname2 preview1" "py.test"
 
   assert [ ! -e "${PYENV_ROOT}/shims/python" ]
   assert [ ! -e "${PYENV_ROOT}/shims/py.test" ]
@@ -108,15 +283,74 @@ SH
 }
 
 @test "sh-rehash in bash" {
-  create_executable "3.4" "python"
+  create_alt_executable_in_version "3.4" "python"
   PYENV_SHELL=bash run pyenv-sh-rehash
-  assert_success "hash -r 2>/dev/null || true"
+  assert_success "command pyenv rehash
+hash -r 2>/dev/null || true"
+}
+
+@test "sh-rehash in bash (integration)" {
+  create_alt_executable_in_version "3.4" "python"
+  PYENV_SHELL=bash run eval "$(pyenv-sh-rehash)"
+  assert_success
   assert [ -x "${PYENV_ROOT}/shims/python" ]
 }
 
 @test "sh-rehash in fish" {
-  create_executable "3.4" "python"
+  create_alt_executable_in_version "3.4" "python"
   PYENV_SHELL=fish run pyenv-sh-rehash
+  assert_success "command pyenv rehash"
+}
+
+@test "sh-rehash in fish (integration)" {
+  command -v fish >/dev/null || skip "-- fish not installed"
+  create_alt_executable_in_version "3.4" "python"
+  PYENV_SHELL=fish fish -Nc "source (pyenv-sh-rehash | psub)"
+  assert_success
+  assert [ -x "${PYENV_ROOT}/shims/python" ]
+}
+
+@test "sh-rehash in pwsh" {
+  create_alt_executable_in_version "3.4" "python"
+  PYENV_SHELL=pwsh run pyenv-sh-rehash
+  assert_success "& (get-command pyenv -commandtype application) rehash"
+}
+
+@test "sh-rehash in pwsh (integration)" {
+  command -v pwsh >/dev/null || skip "-- pwsh not installed"
+  assert [ ! -x "${PYENV_ROOT}/shims/python" ]
+  create_alt_executable_in_version "3.4" "python"
+  run pwsh -nop -c -<<'!'
+$ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $true
+iex ((& pyenv init - pwsh) -join "`n")
+& pyenv rehash
+!
   assert_success ""
   assert [ -x "${PYENV_ROOT}/shims/python" ]
+}
+
+@test "shim sets _PYENV_SHIM_PATH when linked from elsewhere" {
+  export PYENV_VERSION="custom"
+  create_alt_executable python3
+  #must stub pyenv before rehash 'cuz the path is hardcoded into shims
+  create_stub pyenv <<!
+[[ \$1 == 'exec' ]] && \
+echo _PYENV_SHIM_PATH="\$_PYENV_SHIM_PATH"
+!
+  pyenv-rehash
+  mkdir -p "${PYENV_TEST_DIR}/alt-shim"
+  ln -s "${PYENV_ROOT}/shims/python3" "${PYENV_TEST_DIR}/alt-shim/python3"
+
+  run "${PYENV_TEST_DIR}/alt-shim/python3"
+  assert_success
+  assert_output <<!
+_PYENV_SHIM_PATH=${PYENV_TEST_DIR}/alt-shim
+!
+
+  run python3
+  assert_success
+  assert_output <<!
+_PYENV_SHIM_PATH=
+!
 }

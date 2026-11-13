@@ -1,4 +1,1013 @@
-## Version History
+# Version History
+
+## Release v2.8.15
+* Add miniconda3 26.9.3, 26.9.4 by @native-api in https://github.com/pyenv/pyenv/pull/3607
+* Add miniforge3 26.7.2-1, 26.9.4-0, 26.9.4-1 by @native-api in https://github.com/pyenv/pyenv/pull/3608
+* pyenv-uninstall: list installed versions matching a missing version's prefix by @eda-ai-bot in https://github.com/pyenv/pyenv/pull/3611
+* pyenv-latest: sort flavors with a dotted name (e.g. pypy2.7) by version by @vulragrag-star in https://github.com/pyenv/pyenv/pull/3613
+* Run CI tests in parallel; allow to pass Bats options by @native-api in https://github.com/pyenv/pyenv/pull/3615
+* Fix broken `pyenv --help` when `.dylib` was compiled by @Andrej730 in https://github.com/pyenv/pyenv/pull/3614
+* pyenv-latest: exclude free-threaded prereleases from prefix resolution by @nk-batman21 in https://github.com/pyenv/pyenv/pull/3617
+* Add check for whitespace issues by @Andrej730 in https://github.com/pyenv/pyenv/pull/3616
+* CI: remove macos-14 by @native-api in https://github.com/pyenv/pyenv/pull/3619
+* python-build: share platform detection by @macayu17 in https://github.com/pyenv/pyenv/pull/3618
+* pyenv-latest: keep the 't' suffix when printing an unresolved prefix back by @nk-batman21 in https://github.com/pyenv/pyenv/pull/3621
+* Add GraalPy 25.5.5 by @msimacek in https://github.com/pyenv/pyenv/pull/3622
+* docs: explain the python- version prefix by @Blues-berry in https://github.com/pyenv/pyenv/pull/3610
+* version-file: fix infinite loop in Bash <4.4 with some invalid PWD values inherited from environment by @RollingAI in https://github.com/pyenv/pyenv/pull/3624
+* Add CPython 3.16.0a2 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3626
+* Add miniconda3 26.9.4-1 by @native-api in https://github.com/pyenv/pyenv/pull/3627
+* Add miniforge3 26.9.4-2 by @native-api in https://github.com/pyenv/pyenv/pull/3628
+
+## Release v2.8.14
+* README: fix `pyenv init --install` usage in suggested shell setup by @dcadolph in https://github.com/pyenv/pyenv/pull/3603
+* Graalpy cleanup by @native-api in https://github.com/pyenv/pyenv/pull/3602
+* Add CPython 3.11.18 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3605
+* Add CPython 3.12.16, 3.13.18, 3.14.10, 3.15.2 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3604
+* Prefer Tcl/Tk 9 for 3.15+ by @native-api in https://github.com/pyenv/pyenv/pull/3606
+
+## Release v2.8.13
+* Add CPython 3.13.17 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3601
+
+## Release v2.8.11
+* pyenv-latest: include plugin definitions in known-version lookup by @macayu17 in https://github.com/pyenv/pyenv/pull/3596
+* Add PyPy v8.0.1 by @jsirois in https://github.com/pyenv/pyenv/pull/3597
+* CI: add_version, no_response: don't run in forks by @native-api in https://github.com/pyenv/pyenv/pull/3600
+* Add CPython 3.14.9, 3.15.1 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3599
+
+## Release v2.8.10
+* python-build: honor SDKROOT when selecting Xcode SDK for zlib by @danglduy in https://github.com/pyenv/pyenv/pull/3591
+* version-file-write: fix not detecting an empty version argument beyond the first by @native-api in https://github.com/pyenv/pyenv/pull/3592
+* Harden source scripts with `set -euo pipefail` and `set -f` by @saloni-eng in https://github.com/pyenv/pyenv/pull/3581
+* Add CPython 3.16.0a1 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3593
+
+## Release v2.8.9
+* Rename PYTHON_BUILD_TCLTK_FORMULA to PYTHON_BUILD_HOMEBREW_TCLTK_FORMULA; deprecate the old name by @native-api in https://github.com/pyenv/pyenv/pull/3580
+* python-build: install_git: Support verifying the checkout by SHA-1 by @native-api in https://github.com/pyenv/pyenv/pull/3586
+* python-build: support additional versioned OpenSSL Homebrew formulae by @native-api in https://github.com/pyenv/pyenv/pull/3588
+* python-build: use more dependencies from Homebrew/MacPorts for PyPy source build by @native-api in https://github.com/pyenv/pyenv/pull/3587
+* PyPy: update sources and dependencies by @native-api in https://github.com/pyenv/pyenv/pull/3585
+* Add CPython 3.15.0 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3589
+* CI: 3.10->3.15; use ubuntu-26.04 by @native-api in https://github.com/pyenv/pyenv/pull/3590
+
+## Release v2.8.8
+* pyenv-binary: allow local definitions to override published packages by @macayu17 in https://github.com/pyenv/pyenv/pull/3577
+* exec: add the `--environment` option for programs that embed `libpython` without a path by @Romwierz in https://github.com/pyenv/pyenv/pull/3537
+* Add CPython 3.15.0rc3 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3578
+
+## Release v2.8.7
+* Fix rehash repair of individually corrupted shims by @aprylewu in https://github.com/pyenv/pyenv/pull/3540
+* CI: publish Apple Silicon macOS binaries by @macayu17 in https://github.com/pyenv/pyenv/pull/3556
+* python-build: create PEP 394 symlinks for Pyston by @dmrlawson in https://github.com/pyenv/pyenv/pull/3557
+* Add GraalPy 3.13 25.4.4 by @msimacek in https://github.com/pyenv/pyenv/pull/3558
+* python-build: create PEP 394 symlinks for PyPy by @native-api in https://github.com/pyenv/pyenv/pull/3559
+* install-prerequisites: add an option for optional dependencies by @native-api in https://github.com/pyenv/pyenv/pull/3560
+* python-build: create pypy* symlinks for PyPy by @native-api in https://github.com/pyenv/pyenv/pull/3562
+* Add PyPy v7.3.23 by @exurd in https://github.com/pyenv/pyenv/pull/3553
+* Add PyPy v7.3.21 by @exurd in https://github.com/pyenv/pyenv/pull/3564
+* python-build: Add `add_pypy.py` for pypy versions by @exurd in https://github.com/pyenv/pyenv/pull/3566
+* pyenv-binary: install published CPython packages by @macayu17 in https://github.com/pyenv/pyenv/pull/3567
+* python-build: show download progress in interactive terminals by @n0tl3ss in https://github.com/pyenv/pyenv/pull/3561
+* Fix minimum macOS version check for PyPy v7.3.8+ by @exurd in https://github.com/pyenv/pyenv/pull/3570
+* Add PyPy v8.0.0 by @exurd in https://github.com/pyenv/pyenv/pull/3552
+* python-build: Speed up permission fix step by @native-api in https://github.com/pyenv/pyenv/pull/3571
+* fix(init): honor custom PYENV_ROOT in init setup tips by @r3wretrhy in https://github.com/pyenv/pyenv/pull/3569
+* tests: python-build: use helpers from core by @macayu17 in https://github.com/pyenv/pyenv/pull/3572
+* Add CPython 3.12.15, 3.13.16 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3575
+* Add CPython 3.14.8 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3574
+* Add CPython 3.10.22, 3.11.17 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3576
+
+## Release v2.8.6
+* Update graalpy URLs for 25.3.4.1 by @msimacek in https://github.com/pyenv/pyenv/pull/3533
+* python-build: add build prerequisite installer by @macayu17 in https://github.com/pyenv/pyenv/pull/3532
+* docs: Add link to list of available Python distributions by @michaelbnewman in https://github.com/pyenv/pyenv/pull/3535
+* Incorporate the `pyenv-link` plugin by @macayu17 in https://github.com/pyenv/pyenv/pull/3538
+* CI: publish Ubuntu binary packages by @macayu17 in https://github.com/pyenv/pyenv/pull/3539
+* python-build: honor explicitly configured OpenSSL on macOS by @aprylewu in https://github.com/pyenv/pyenv/pull/3541
+* pyenv-binary: use xz compression for archives by @macayu17 in https://github.com/pyenv/pyenv/pull/3543
+* Backport XCode 27 support to 3.14 by @native-api in https://github.com/pyenv/pyenv/pull/3545
+* Backport XCode 27 support to 3.13; add missing 3.13.11t by @native-api in https://github.com/pyenv/pyenv/pull/3546
+* Backport XCode 27 support to 3.12 by @native-api in https://github.com/pyenv/pyenv/pull/3547
+* Backport XCode 27 support to 3.11 by @native-api in https://github.com/pyenv/pyenv/pull/3548
+* Backport XCode 27 support to 3.10 by @native-api in https://github.com/pyenv/pyenv/pull/3549
+* Add miniconda3 26.7.1-0, 26.7.1-1 and miniforge3 26.5.3-0, 26.7.2-0 by @13steinj in https://github.com/pyenv/pyenv/pull/3550
+
+## Release v2.8.5
+* pyenv-binary: record direct system dependencies in Linux/FreeBSD by @macayu17 in https://github.com/pyenv/pyenv/pull/3520
+* tests: Fix "cd: null directory" in OpenSUSE by @native-api in https://github.com/pyenv/pyenv/pull/3524
+* Test improvements by @native-api in https://github.com/pyenv/pyenv/pull/3525
+* CI: test on all runners when the build logic changes by @sujeito-operator in https://github.com/pyenv/pyenv/pull/3522
+* Add GraalPy 25.3.4.1 by @msimacek in https://github.com/pyenv/pyenv/pull/3529
+* Add CPython 3.15.0rc2 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3530
+* pyenv-binary: support relocating macOS archives by @macayu17 in https://github.com/pyenv/pyenv/pull/3528
+
+## Release v2.8.4
+* CI: Add macos_26_intel by @native-api in https://github.com/pyenv/pyenv/pull/3514
+* pyenv-binary: check FreeBSD system libraries by @macayu17 in https://github.com/pyenv/pyenv/pull/3511
+* version-file: Fix infinite loop for a relative path argument by @fudianchn in https://github.com/pyenv/pyenv/pull/3515
+* pyenv-binary: check patchelf early and add --verbose by @macayu17 in https://github.com/pyenv/pyenv/pull/3516
+* CI: add ubuntu ARM images by @native-api in https://github.com/pyenv/pyenv/pull/3517
+* Add CPython 3.10.21, 3.11.16, 3.12.14 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3518
+* Add anaconda3-2026.07-1, miniconda3 26.5.3-2 by @native-api in https://github.com/pyenv/pyenv/pull/3519
+
+## Release v2.8.3
+* Add CPython 3.13.15, 3.14.7 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3512
+
+## Release v2.8.2
+* pyenv-binary: add the `package` subcommand; add `pyenv install --list --bare` by @macayu17 in https://github.com/pyenv/pyenv/pull/3498
+* Add graalpy3.12-25.2.4 by @msimacek in https://github.com/pyenv/pyenv/pull/3502
+* Bump actions/setup-python from 6 to 7 in the github-actions group by @dependabot[bot] in https://github.com/pyenv/pyenv/pull/3505
+* add_cpython: refactor extra Requests logic by @anupamme in https://github.com/pyenv/pyenv/pull/3507
+* Add CPython 3.15.0rc1 by @jsirois in https://github.com/pyenv/pyenv/pull/3510
+* pyenv-binary: generate platform-specific package names by @macayu17 in https://github.com/pyenv/pyenv/pull/3504
+
+## Release v2.8.1
+* pyenv-binary: add the `generate-installer` subcommand by @macayu17 in https://github.com/pyenv/pyenv/pull/3488
+* Add CPython 3.15.0b4 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3495
+
+## Release v2.8.0
+* CVE-2026-68939: Fix handling of glob characters in .python-version
+* CI: add_version enhancements by @native-api in https://github.com/pyenv/pyenv/pull/3480
+* Add miniforge3-26.3.2-2, 26.3.2-3 by @native-api in https://github.com/pyenv/pyenv/pull/3481
+* rehash: fix race condition in landlock writability check by @Sheile in https://github.com/pyenv/pyenv/pull/3483
+* Add script to generate sponsors section for release notes by @macayu17 in https://github.com/pyenv/pyenv/pull/3478
+* install: Add an ability to install a version under an alias by @macayu17 in https://github.com/pyenv/pyenv/pull/3484
+* Add graalpy-3.12-25.1.3 by @msimacek in https://github.com/pyenv/pyenv/pull/3485
+* Bump actions/checkout from 6 to 7 in the github-actions group by @dependabot[bot] in https://github.com/pyenv/pyenv/pull/3486
+* Add an experimental pyenv-binary plugin with a save command by @macayu17 in https://github.com/pyenv/pyenv/pull/3487
+* CI: dependabot: set cooldown by @orbisai0security in https://github.com/pyenv/pyenv/pull/3489
+* Fix typos in docs, scripts, and tests by @maxtaran2010 in https://github.com/pyenv/pyenv/pull/3490
+* Add miniconda3 26.5.3-1 by @native-api in https://github.com/pyenv/pyenv/pull/3491
+* version-name: skip redundant checks by @native-api in https://github.com/pyenv/pyenv/pull/3492
+
+## Release v2.7.3
+* CI: add_version enhancements by @macayu17 in https://github.com/pyenv/pyenv/pull/3475
+* Add CPython 3.15.0b3 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3479
+
+## Release v2.7.2
+* fix(rehash): prevent terminal hang caused by stale or sandbox-blocked lock file by @anupddas in https://github.com/pyenv/pyenv/pull/3469
+* 3.6.x: Fix verify_* calls by @native-api in https://github.com/pyenv/pyenv/commit/6c0c5cfa9619e4a7a90102d8bee6c771c4739836
+* Add CPython 3.14.6 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3472
+* Add CPython 3.13.14 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3473
+
+## Release v2.7.1
+* Support 3.9 EOL Pip URL, consolidate tests by @native-api in https://github.com/pyenv/pyenv/pull/3465
+* Update URLs for PyPy nightly; Remove pypy3.5 and pypy3.7 nightly by @native-api in https://github.com/pyenv/pyenv/pull/3466
+* Add CPython 3.15.0b2 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3467
+* init: add --install for shell setup by @macayu17 in https://github.com/pyenv/pyenv/pull/3454
+* realpath.c: fix obsolete syntax warning by @native-api in https://github.com/pyenv/pyenv/pull/3468
+
+## Release v2.6.32
+* Add miniconda3 26.3.2-2, miniforge3 26.3.2-0, 26.3.2-1 by @native-api in https://github.com/pyenv/pyenv/pull/3445
+* miniforge3 26.1, 26.3, add_miniforge: exclude .pkg installers by @native-api in https://github.com/pyenv/pyenv/pull/3446
+* miniforge 26, CI: switch check to 3.13 by @native-api in https://github.com/pyenv/pyenv/pull/3447
+* 2.7, 3.4: force C99 standard; 2.7.14-18: force OpenSSL 1 formula by @native-api in https://github.com/pyenv/pyenv/pull/3448
+* rehash: detect and remove a stale lockfile by @native-api in https://github.com/pyenv/pyenv/pull/3450
+* Add GraalPy 25.0.3 by @msimacek in https://github.com/pyenv/pyenv/pull/3452
+* 3.11.0+: Use the `--with-openssl-rpath' Configure option when possible by @native-api in https://github.com/pyenv/pyenv/pull/3458
+* python_build: Make `verify_python` verify `pythonX.Y' suffix by @native-api in https://github.com/pyenv/pyenv/pull/3459
+* Add micropython 1.22.0 to 1.28.0; add downstream patches to fix compilation errors by @native-api in https://github.com/pyenv/pyenv/pull/3460
+* Fix linking against a keg_only Homebrew OpenSSL when a a non-keg_only one is also installed by @native-api in https://github.com/pyenv/pyenv/pull/3462
+* Add missing CPython 3.14.2t by @native-api in https://github.com/pyenv/pyenv/pull/3464
+* 3.14.0-5: Support building against OpenSSL 4 by @native-api in https://github.com/pyenv/pyenv/pull/3463
+
+## Release v2.6.31
+* CI: add_cpython: Support prereleases for non-initial CPython releases by @native-api in https://github.com/pyenv/pyenv/pull/3443
+* Add CPython 3.14.5 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3444
+
+## Release v2.6.30
+* Add CPython 3.16-dev, switch 3.15-dev to maintenance branch by @nedbat in https://github.com/pyenv/pyenv/pull/3442
+
+## Release v2.6.29
+* Add PyPy v7.3.22 by @jsirois in https://github.com/pyenv/pyenv/pull/3438
+* CI: Add timeouts to CPython release metadata fetches by @orbisai0security in https://github.com/pyenv/pyenv/pull/3439
+* Add CPython 3.15.0b1 by @jsirois in https://github.com/pyenv/pyenv/pull/3440
+* Add CPython 3.14.5rc1 by @native-api in https://github.com/pyenv/pyenv/pull/3441
+
+## Release v2.6.28
+* pyenv-latest: fast path for when there is an exact match by @native-api in https://github.com/pyenv/pyenv/pull/3437
+
+## Release v2.6.27
+* commands: fast path for --sh, replace sort|uniq with sort -u by @jakelodwick in https://github.com/pyenv/pyenv/pull/3423
+* which: update the `pyenv help global` tip by @native-api in https://github.com/pyenv/pyenv/pull/3424
+* Bump actions/create-github-app-token from 2 to 3 in the github-actions group by @dependabot[bot] in https://github.com/pyenv/pyenv/pull/3428
+* python-build: advise user with no c compiler by @exurd in https://github.com/pyenv/pyenv/pull/3294
+* Add CPython 3.13.13, 3.14.4, 3.15.0a8 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3432
+* Add miniforge3 26.1.1-2, 26.1.1-3 by @native-api in https://github.com/pyenv/pyenv/pull/3433
+
+## Release v2.6.26
+* versions: fast path for --bare --skip-aliases by @jakelodwick in https://github.com/pyenv/pyenv/pull/3411
+* Fix MacPorts OpenSSL formula detection by @tekintian in https://github.com/pyenv/pyenv/pull/3417
+* rehash: streamline executables discovery; fix regression by @native-api in https://github.com/pyenv/pyenv/pull/3418
+* rehash: simplify source.bash pipeline by @jakelodwick in https://github.com/pyenv/pyenv/pull/3419
+* Add CPython 3.15.0a7 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3421
+
+## Release v2.6.25
+* Add miniforge3-26.1.0-0 by @native-api in https://github.com/pyenv/pyenv/pull/3413
+* Add CPython 3.12.13 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3414
+
+## Release v2.6.24
+* CI: add_version: use Github App token to create PR by @native-api in https://github.com/pyenv/pyenv/pull/3406
+* Add Anaconda3-2025.12-2 by @binbjz in https://github.com/pyenv/pyenv/pull/3408
+* rehash: Drop redundant sort -u from make_shims call by @jakelodwick in https://github.com/pyenv/pyenv/pull/3410
+* Add CPython 3.10.20, 3.11.15 by @pyenv-bot[bot] in https://github.com/pyenv/pyenv/pull/3412
+
+## Release v2.6.23
+* Add CPython 3.15.0a6 by @native-api in https://github.com/pyenv/pyenv/pull/3403
+
+## Release v2.6.22
+* Add CPython 3.13.12 by @github-actions[bot] in https://github.com/pyenv/pyenv/pull/3401
+
+## Release v2.6.21
+* Add GraalPy 25.0.2 by @msimacek in https://github.com/pyenv/pyenv/pull/3395
+* Add CPython 3.14.3 by @github-actions[bot] in https://github.com/pyenv/pyenv/pull/3400
+
+## Release v2.6.20
+* CI: adjust CPython PR generation logic by @native-api in https://github.com/pyenv/pyenv/pull/3392
+* Add CPython 3.15.0a5 by @nedbat in https://github.com/pyenv/pyenv/pull/3393
+
+## Release v2.6.19
+* Add CPython 3.15.0a4 by @nedbat in https://github.com/pyenv/pyenv/pull/3390
+
+## Release v2.6.18
+* Fix an infinite loop if a shim is symlinked to and called from a different location with "system" version active by @native-api in https://github.com/pyenv/pyenv/pull/3375
+* CI: Update and cleanup workflow scripts by @native-api in https://github.com/pyenv/pyenv/pull/3372
+* Add PowerShell support by @fblanchetNaN in https://github.com/pyenv/pyenv/pull/2749
+* rehash: support older BSD `mktemp` by @native-api in https://github.com/pyenv/pyenv/pull/3376
+* rehash: report final lock acquisition error while silencing provisional ones; init: don't silence automatic rehash by @native-api in https://github.com/pyenv/pyenv/pull/3377
+* pyenv launcher: introduce and export _PYENV_INSTALL_PREFIX by @rockandska in https://github.com/pyenv/pyenv/pull/3334
+* README: Document how to change Python version in a shell spawned from a Python-based program (e.g. Jupyter) by @native-api in https://github.com/pyenv/pyenv/pull/3380
+* Recognize an argument to -j in MAKEFLAGS when building extensions in 3.10-3.11 and latest 3.5-3.9 by @native-api in https://github.com/pyenv/pyenv/pull/3379
+* CI: add a script to autogenerate CPython build scripts by @native-api in https://github.com/pyenv/pyenv/pull/3358
+* Add miniconda3-25.11.1-1 by @binbjz in https://github.com/pyenv/pyenv/pull/3382
+* CI: exclude unsupported MacOS-x64 for recent Miniconda versions by @binbjz in https://github.com/pyenv/pyenv/pull/3385
+* Auto-accept TOS for miniconda3-25+ by @native-api in https://github.com/pyenv/pyenv/pull/3386
+* Add anaconda-2025.12-1 by @native-api in https://github.com/pyenv/pyenv/pull/3387
+* CI: automatically check for CPython releases and generate PRs by @native-api in https://github.com/pyenv/pyenv/pull/3388
+
+## Release v2.6.17
+* Add miniforge 25.9.1-0, 25.11.0-1 by @13steinj in https://github.com/pyenv/pyenv/pull/3371
+* miniconda3-latest: auto accept TOS by @native-api in https://github.com/pyenv/pyenv/pull/3373
+* Add CPython 3.15.0a3 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3374
+
+## Release v2.6.16
+* rehash: Fix hanging for 60 seconds when shims directory is not writable due to Linux Landlock by @native-api in https://github.com/pyenv/pyenv/pull/3367
+* Add Miniconda3-25.9.1-3 by @binbjz in https://github.com/pyenv/pyenv/pull/3368
+* sh-rehash: Fix erroneously executing rather than printing a command by @native-api in https://github.com/pyenv/pyenv/pull/3369
+* Add CPython 3.13.11, 3.14.2 by @cesarcoatl in https://github.com/pyenv/pyenv/pull/3370
+
+## Release v2.6.15
+* Add CPython 3.13.10 by @jsirois in https://github.com/pyenv/pyenv/pull/3364
+
+## Release v2.6.14
+* CI: Bump actions/checkout from 5 to 6 in the github-actions group by @dependabot[bot] in https://github.com/pyenv/pyenv/pull/3360
+* Fix "ld: symbol(s) not found" for C system calls in some MacOS versions if XCode is for a newer major MacOS version by @native-api in https://github.com/pyenv/pyenv/pull/3362
+* Add CPython 3.14.1 by @nedbat in https://github.com/pyenv/pyenv/pull/3363
+
+## Release v2.6.13
+* CI: Replace macos-13 with macos-15-intel by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3356
+* Add Miniconda3-25.9.1-1 by @binbjz in https://github.com/pyenv/pyenv/pull/3357
+* Add CPython 3.15.0a2 by @nedbat in https://github.com/pyenv/pyenv/pull/3359
+
+## Release v2.6.12
+* Add graalpy-25.0.1 by @msimacek in https://github.com/pyenv/pyenv/pull/3350
+* Add CPython 3.9.25 by @nedbat in https://github.com/pyenv/pyenv/pull/3355
+
+## Release v2.6.11
+* Support building against Homebrew Tcl/Tk 9 by @native-api in https://github.com/pyenv/pyenv/pull/3343
+* Add CPython 3.13.9 by @nedbat in https://github.com/pyenv/pyenv/pull/3346
+* Add CPython 3.15.0a1 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3347
+
+## Release v2.6.10
+* Add CPython 3.12.12, 3.11.14, 3.10.19, 3.9.24 by @nedbat in https://github.com/pyenv/pyenv/pull/3344
+
+## Release v2.6.9
+* CI: modified-scripts-build: fix CPython-specific jobs never firing by @tuzi3040 in https://github.com/pyenv/pyenv/pull/3338
+* CI: modified-scripts-build: fix output variable for CPython-specific workflows by @native-api in https://github.com/pyenv/pyenv/pull/3340
+* Add CPython 3.14.0 by @SnoopJ in https://github.com/pyenv/pyenv/pull/3339
+* Add CPython 3.13.8 by @jsirois in https://github.com/pyenv/pyenv/pull/3341
+
+## Release v2.6.8
+* Use Zlib from XCode SDK in a way compatible with XCode 16 and CLT by @JarheadStever in https://github.com/pyenv/pyenv/pull/3301
+* Add miniforge 25.3.0-1, 25.3.0-2, 25.3.0-3, 25.3.1-0, skip miniforge 25.3.0-0 by @native-api in https://github.com/pyenv/pyenv/pull/3306
+* Fix Readline and OpenSSL detection for MacPorts without the corresponding package by @native-api in https://github.com/pyenv/pyenv/pull/3317
+* Bump actions/checkout from 4 to 5 in the github-actions group by @dependabot[bot] in https://github.com/pyenv/pyenv/pull/3318
+* Fix rehash hook for pipx/pipx.x/pipx.xx by @rockandska in https://github.com/pyenv/pyenv/pull/3320
+* Add miniconda 25.7.0-2 by @native-api in https://github.com/pyenv/pyenv/pull/3323
+* Support curl from a snap by @native-api in https://github.com/pyenv/pyenv/pull/3329
+* CI: Bats test suite in docker by @rockandska in https://github.com/pyenv/pyenv/pull/3324
+* Add GraalPy 25.0.0 by @msimacek in https://github.com/pyenv/pyenv/pull/3331
+* Upgrade pip detetcion in pip-rehash to accept multiple variations by @rockandska in https://github.com/pyenv/pyenv/pull/3330
+* Add CPython 3.14.0rc3 by @nedbat in https://github.com/pyenv/pyenv/pull/3333
+* Use TCLTK_* and pkg-config for 3.11+ linking with Homebrew Tcl/Tk; add PYTHON_BUILD_TCLTK_FORMULA envvar by @native-api in https://github.com/pyenv/pyenv/pull/3327
+
+## Release v2.6.7
+* Skip Zlib from XCode for XCode 16+ by @native-api in https://github.com/pyenv/pyenv/pull/3298
+* Don't fail the build if `xcodebuild` fails by @native-api in https://github.com/pyenv/pyenv/pull/3302
+* Add CPython 3.14.0rc2 and 3.13.7 by @nedbat in https://github.com/pyenv/pyenv/pull/3303
+
+## Release v2.6.6
+* Add anaconda3-2025.06-0, anaconda3-2025.06-1, miniconda3-25.3.1-1, miniconda3-25.5.1-0, miniconda3-25.5.1-1 by @native-api in https://github.com/pyenv/pyenv/pull/3295
+* Add CPython 3.13.6 by @cesarcoatl in https://github.com/pyenv/pyenv/pull/3297
+
+## Release v2.6.5
+* Bump OpenSSL to 3.5.1 in the latest releases and branch tips in CPython 3.12 - 3.15 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3287
+* Add Jython 2.7.4 by @cesarcoatl in https://github.com/pyenv/pyenv/pull/3290
+* Add CPython 3.14.0rc1 by @nedbat in https://github.com/pyenv/pyenv/pull/3293
+* Add GraalPy 24.2.2 by @msimacek in https://github.com/pyenv/pyenv/pull/3291
+
+## Release v2.6.4
+* Backport bpo_36106 to 3.5.10 and 3.6.15 by @native-api in https://github.com/pyenv/pyenv/pull/3280
+* (regression) Use Zlib from XCode SDK in MacOS without Homebrew or Macports by @native-api in https://github.com/pyenv/pyenv/pull/3282
+* Add PyPy v7.3.20 by @jsirois in https://github.com/pyenv/pyenv/pull/3284
+* Add CPython 3.14.0b4 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3285
+
+## Release v2.6.3
+* README: Re-promote "Python versions with extended support" to a section by @native-api in https://github.com/pyenv/pyenv/pull/3276
+* Support linking to MacPorts ports installed from binary archives by @0916dhkim in https://github.com/pyenv/pyenv/pull/3272
+* Add CPython 3.14.0b3 by @nedbat in https://github.com/pyenv/pyenv/pull/3278
+
+## Release v2.6.2
+* Add CPython 3.13.5 by @nedbat in https://github.com/pyenv/pyenv/pull/3269
+
+## Release v2.6.1
+* Add CPython 3.9.23, 3.10.18, 3.11.13, 3.12.11, 3.13.4 by @nedbat in https://github.com/pyenv/pyenv/pull/3266
+
+## Release v2.6.0
+* python-build: Support patch paths with spaces/special characters by @native-api in https://github.com/pyenv/pyenv/pull/3251
+* Add CODEOWNERS file by @native-api in https://github.com/pyenv/pyenv/pull/3247
+* README: make fish PATH add conditional on the directory existing by @BooleanCat in https://github.com/pyenv/pyenv/pull/2786
+* Add --bare option to `pyenv version` by @jjwatt in https://github.com/pyenv/pyenv/pull/2783
+* README: Add shell setup instructions for nushell by @jordanst3wart in https://github.com/pyenv/pyenv/pull/2916
+* Add MacPorts support for python-build by @studnitskiy in https://github.com/pyenv/pyenv/pull/3186
+* python-build: fix `has_broken_mac_readline` when Readline is explicitly configured by @fofoni in https://github.com/pyenv/pyenv/pull/3254
+* Add CPython 3.14.0b2 by @nedbat in https://github.com/pyenv/pyenv/pull/3259
+
+## Release v2.5.7
+* Point 3.14-dev to `3.14` branch by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3246
+
+## Release v2.5.6
+* Add GraalPy 24.2.1 by @msimacek in https://github.com/pyenv/pyenv/pull/3238
+* Fix get-pip URLs for 3.7, 3.8 and Pyston by @dmrlawson in https://github.com/pyenv/pyenv/pull/3242
+* [CI] Cache `uname` and `sw_vers` output in Python-Build for easier mocking in tests by @native-api in https://github.com/pyenv/pyenv/pull/3244
+* Add CPython 3.14.0b1 and 3.15-dev by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3245
+
+## Release v2.5.5
+* Add graalpy 24.2 by @msimacek in https://github.com/pyenv/pyenv/pull/3215
+* Switch 3.9+ to OpenSSL 3 by @native-api in https://github.com/pyenv/pyenv/pull/3223
+* Add miniforge3-24.11.3-1, miniforge3-24.11.3-2, miniforge3-25.1.1 by @native-api in https://github.com/pyenv/pyenv/pull/3224
+* Add CPython 3.9.22, 3.10.17, 3.11.12, 3.12.10, 3.13.3, 3.14.0a7 by @native-api in https://github.com/pyenv/pyenv/pull/3233
+
+## Release v2.5.4
+* Add anaconda3-2025.1.1-2 by @binbjz in https://github.com/pyenv/pyenv/pull/3198
+* Add PyPy v7.3.19 by @jsirois in https://github.com/pyenv/pyenv/pull/3205
+* Add CPython 3.14.0a6 by @nedbat in https://github.com/pyenv/pyenv/pull/3213
+
+## Release v2.5.3
+* Add PyPy v7.3.18 by @dand-oss in https://github.com/pyenv/pyenv/pull/3184
+* Add Miniconda3 25.1.1-0 by @binbjz in https://github.com/pyenv/pyenv/pull/3190
+* Add miniforge3-25.1.1-0, miniforge3-24.11.3-0 by @native-api in https://github.com/pyenv/pyenv/pull/3191
+* Add CPython 3.14.0a5 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3194
+* Add Miniconda3 25.1.1-1 by @binbjz in https://github.com/pyenv/pyenv/pull/3192
+* Update hashes for Python 3.14.0a5 tarballs by @jsirois in https://github.com/pyenv/pyenv/pull/3196
+* rehash: Do not execute conda-specific code if conda is not installed by @ChristianFredrikJohnsen in https://github.com/pyenv/pyenv/pull/3151
+
+## Release v2.5.2
+* Fix OpenSSL version parsing in python-build script by @threadflow in https://github.com/pyenv/pyenv/pull/3181
+* Add GraalPy 24.1.2 by @msimacek in https://github.com/pyenv/pyenv/pull/3176
+* Add CPython 3.12.9 and 3.13.2 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3183
+
+## Release v2.5.1
+* CI: use Ubuntu 24.04; use ubuntu-latest for the ubuntu_build check by @native-api in https://github.com/pyenv/pyenv/pull/3144
+* Fix: mistake in configuration hints in `pyenv init` and manpage by @ChristianFredrikJohnsen in https://github.com/pyenv/pyenv/pull/3145
+* README: Add recommended curl arguments to suggested installer invocation by @JayBazuzi in https://github.com/pyenv/pyenv/pull/3155
+* Add miniforge3-24.11.2-0, miniforge3-24.11.2-1 by @native-api in https://github.com/pyenv/pyenv/pull/3163
+* Fix "Unsupported options" error building bundled OpenSSL <3.2.0 by @native-api in https://github.com/pyenv/pyenv/pull/3164
+* Add CPython 3.14.0a4 by @nedbat in https://github.com/pyenv/pyenv/pull/3168
+
+## Release v2.5.0
+* `pyenv init -` performance improvements; recommend using `pyenv init - <shell>` by @ChristianFredrikJohnsen in https://github.com/pyenv/pyenv/pull/3136
+* Add miniconda3-24.11.1-0 by @binbjz in https://github.com/pyenv/pyenv/pull/3138
+* Add miniconda3-24.3.0-0 by @native-api in https://github.com/pyenv/pyenv/pull/3139
+* CI: only run macos_build_bundled_dependencies and ubuntu_build_tar_gz for CPython by @native-api in https://github.com/pyenv/pyenv/pull/3141
+* Add miniforge3 and mambaforge3 24.1.2-0, 24.3.0-0, 24.5.0-0, 24.7.1-0, 24.7.1-1, 24.7.1-2, 24.9.0-0, 24.9.2-0, 24.11.0-0, 24.11.0-1 by @native-api in https://github.com/pyenv/pyenv/pull/3142
+* Skip broken miniforge3/mambaforge3 22.11.0-0, 22.11.0-1, 22.11.0-2 in the generation script by @native-api in https://github.com/pyenv/pyenv/pull/3143
+
+## Release v2.4.23
+* README: explain using multiple versions by @Finkregh in https://github.com/pyenv/pyenv/pull/3126
+* Support PACKAGE_CPPFLAGS and PACKAGE_LDFLAGS by @native-api in https://github.com/pyenv/pyenv/pull/3130
+* Adjust suggested shell startup code to support Pyenv with Pyenv-Win in WSL by @native-api in https://github.com/pyenv/pyenv/pull/3132
+* Support nonexistent versions being present and set in a local .python-version by @native-api in https://github.com/pyenv/pyenv/pull/3134
+* Add CPython 3.14.0a3 by @nedbat in https://github.com/pyenv/pyenv/pull/3135
+
+## Release v2.4.22
+* Speed up building bundled OpenSSL by @native-api in https://github.com/pyenv/pyenv/pull/3124
+* CI: add building modified scripts with bundled MacOS dependencies by @native-api in https://github.com/pyenv/pyenv/pull/3123
+* CL: + test modified scripts with tar.gz source by @native-api in https://github.com/pyenv/pyenv/pull/3125
+* Fix 404 for openssl-3.4.0 release in build 3.13.1 by @dlamblin in https://github.com/pyenv/pyenv/pull/3122
+
+## Release v2.4.21
+* Add CPython 3.13.1t by @makukha in https://github.com/pyenv/pyenv/pull/3120
+* Prefer tcl-tk@8 from Homebrew due to release of Tcl/Tk 9 with which only 3.12+ are compatible by @native-api in https://github.com/pyenv/pyenv/pull/3118
+
+## Release v2.4.20
+* README: Fix Markdown in "Notes about python releases" by @noelleleigh in https://github.com/pyenv/pyenv/pull/3112
+* README: correct link to shell setup instructions by @shortcuts in https://github.com/pyenv/pyenv/pull/3113
+* Add CPython 3.9.21, 3.10.16, 3.11.11, 3.12.8 and 3.13.1 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3117
+
+## Release v2.4.19
+* Add CPython 3.14.0a2 by @nedbat in https://github.com/pyenv/pyenv/pull/3110
+* Add quick start section and gif demo to accompany it. by @madhu-GG in https://github.com/pyenv/pyenv/pull/3044
+
+## Release v2.4.18
+* Add miniforge3-24.9.2-0 by @goerz in https://github.com/pyenv/pyenv/pull/3106
+
+## Release v2.4.17
+* Add miniconda3-24.9.2-0 by @binbjz in https://github.com/pyenv/pyenv/pull/3096
+* Add Anaconda3-2024.10-1 by @binbjz in https://github.com/pyenv/pyenv/pull/3097
+
+## Release v2.4.16
+* Add GraalPy 24.1.1 by @msimacek in https://github.com/pyenv/pyenv/pull/3092
+* Add CPython 3.14.0a1 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3093
+
+## Release v2.4.15
+* CI: replace set-output with GITHUB_OUTPUT by @tuzi3040 in https://github.com/pyenv/pyenv/pull/3079
+* Make uninstall yes/no prompt consistent with others by @dpoznik in https://github.com/pyenv/pyenv/pull/3080
+* Add CPython 3.13.0 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3081
+* Avoid shadowing of virtualenvs with the name starting with "python-" by @aarbouin in https://github.com/pyenv/pyenv/pull/3086
+* Support free-threaded CPython flavor in prefix resolution by @native-api in https://github.com/pyenv/pyenv/pull/3090
+
+## Release v2.4.14
+* Add CPython 3.12.7 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3078
+* Add CPython 3.13.0rc3 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3077
+
+## Release v2.4.13
+* docs: Use `--verbose` with performance CPython build instructions by @caerulescens in https://github.com/pyenv/pyenv/pull/3053
+* Fix latest version resolution when using `python-` prefix by @edmorley in https://github.com/pyenv/pyenv/pull/3056
+* Fix tgz checksum for 3.9.20; fallback OpenSSL URLs and checksums by @native-api in https://github.com/pyenv/pyenv/pull/3060
+* Fix OpenSSL 3.3.2 download URLs by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3059
+* Add GraalPy 24.1.0 by @msimacek in https://github.com/pyenv/pyenv/pull/3066
+
+## Release v2.4.12
+* Add CPython 3.13.0rc2 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3049
+* Add CPython 3.8.20, 3.9.20, 3.10.15, 3.11.10 and 3.12.6 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3050
+
+## Release v2.4.11
+* Add /usr/etc/pyenv.d to hooks path by @tomschr in https://github.com/pyenv/pyenv/pull/3039
+* Add miniconda3-24.7.1-0 by @binbjz in https://github.com/pyenv/pyenv/pull/3040
+* Add PyPy v7.3.17 by @jsirois in https://github.com/pyenv/pyenv/pull/3045
+
+## Release v2.4.10
+* Add CPython 3.12.5 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3030
+
+## Release v2.4.9
+* Add miniforge3-24.3.0-0 by @goerz in https://github.com/pyenv/pyenv/pull/3028
+* Add CPython 3.13.0rc1 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3029
+
+## Release v2.4.8
+* Fix pyenv-uninstall not having the debug tracing invocation by @native-api in https://github.com/pyenv/pyenv/pull/3020
+* Add CPython 3.13.0b4 and 3.13.0b4t by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/3019
+* README: Remove reference to Fig by @ThomasHaz in https://github.com/pyenv/pyenv/pull/3018
+* Fix tests failing if plugins are installed by @native-api in https://github.com/pyenv/pyenv/pull/3022
+* pyenv-latest: replace -q with -b and -f, document as internal by @native-api in https://github.com/pyenv/pyenv/pull/3021
+
+## Release v2.4.7
+* Add support for anaconda3-2024.06-1 by @binbjz in https://github.com/pyenv/pyenv/pull/3009
+* Fix debug build for X.Yt-dev by @native-api in https://github.com/pyenv/pyenv/pull/
+
+## Release v2.4.6
+* CI: push MacOS jobs to MacOS 13 and 14 by @native-api in https://github.com/pyenv/pyenv/pull/3002
+* Add 3.13.0b3t and exclude it from `pyenv latest` by @colesbury in https://github.com/pyenv/pyenv/pull/3001
+* Speed up `pyenv prefix` by not constructing advice text when it would be discarded by @Erotemic in https://github.com/pyenv/pyenv/pull/3005
+
+## Release v2.4.5
+* Add CPython 3.13.0b3 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2996
+
+## Release v2.4.4
+* Add support for miniconda3 24.5.0-0 with py3.12, py3.11, py3.10, py3.9 by @binbjz in https://github.com/pyenv/pyenv/pull/2994
+* Add support for free-threaded Python by @colesbury in https://github.com/pyenv/pyenv/pull/2995
+
+## Release v2.4.3
+* Add miniconda3 24.4.0-0 by @binbjz in https://github.com/pyenv/pyenv/pull/2982
+
+## Release v2.4.2
+* Add script to install graalpy development builds by @timfel in https://github.com/pyenv/pyenv/pull/2969
+* Correct the Explanation of PATH Variable Lookup by @Y-askour in https://github.com/pyenv/pyenv/pull/2975
+* Document PYTHON_BUILD_CURL_OPTS, PYTHON_BUILD_WGET_OPTS, PYTHON_BUILD_ARIA2_OPTS by @native-api in https://github.com/pyenv/pyenv/pull/2976
+* Add sed and greadlink to shim exceptions by @native-api in https://github.com/pyenv/pyenv/pull/2977
+* Add CPython 3.13.0b2 by @jsirois in https://github.com/pyenv/pyenv/pull/2978
+* Add CPython 3.12.4 by @xxzgc in https://github.com/pyenv/pyenv/pull/2981
+
+## Release v2.4.1
+* Add CPython 3.12.3 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2941
+* Add CPython 3.13.0a6 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2942
+* Add PyPy v7.3.16 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2948
+* Add CPython 3.14-dev, update 3.13-dev by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2960
+* Add CPython 3.13.0b1 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2959
+
+## Release v2.4.0
+* Add CPython 3.13.0a4 by @saaketp in https://github.com/pyenv/pyenv/pull/2903
+* Handle the case where `pyenv-commands --sh` returns nothing by @aphedges in https://github.com/pyenv/pyenv/pull/2908
+* Document default build configuration customizations by @native-api in https://github.com/pyenv/pyenv/pull/2911
+* Use Homebrew in Linux if Pyenv is installed with Homebrew by @native-api in https://github.com/pyenv/pyenv/pull/2906
+* Add miniforge and mambaforge 22.11.1-3, 22.11.1-4, 23.1.0-0 to 23.11.0-0 by @aphedges in https://github.com/pyenv/pyenv/pull/2909
+* Add miniconda3-24.1.2 by @binbjz in https://github.com/pyenv/pyenv/pull/2915
+* Minor grammar fix in libffi backport patch in 2.5.x by @cuinix in https://github.com/pyenv/pyenv/pull/2922
+* Add CPython 3.13.0a5 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2924
+* Add CPython 3.8.19 and 3.9.19 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2929
+* Add GraalPy 24.0.0 by @msimacek in https://github.com/pyenv/pyenv/pull/2928
+* Add CPython 3.10.14 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2930
+* Add Jython 2.7.3 by @cesarcoatl in https://github.com/pyenv/pyenv/pull/2936
+* Add CPython 3.11.9 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2938
+* Add anaconda 2024.02 by @native-api in https://github.com/pyenv/pyenv/pull/2939
+
+## Release v2.3.36
+* Add a Dependabot config to auto-update GitHub action versions by @kurtmckee in https://github.com/pyenv/pyenv/pull/2863
+* Bump the github-actions group with 1 update by @dependabot in https://github.com/pyenv/pyenv/pull/2864
+* Add installation prefix to `python-config --ldflags` output by @mhaeuser in https://github.com/pyenv/pyenv/pull/2865
+* Add support for miniconda3 23.11.0-1, 23.11.0-2 with py3.11, py3.10, py3.9, py3.8 by @binbjz in https://github.com/pyenv/pyenv/pull/2870
+* Add micropython 1.20.0 and 1.21.0 by @cpzt in https://github.com/pyenv/pyenv/pull/2869
+* Make "Automatic installer" command in the README a copy-able code block by @ryan-williams in https://github.com/pyenv/pyenv/pull/2874
+* Add PyPy 7.3.14 by @dand-oss in https://github.com/pyenv/pyenv/pull/2876
+* Add graalpy-23.1.2 by @msimacek in https://github.com/pyenv/pyenv/pull/2884
+* Add CPython 3.13.0a3 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2885
+* Add PyPy v7.3.15 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2886
+* Update pypy3.9-7.3.13 checksums by @ecerulm in https://github.com/pyenv/pyenv/pull/2887
+* Add CPython 3.12.2 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2899
+* Add CPython 3.11.8 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2898
+
+## Release v2.3.35
+* Add CPython 3.12.1 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2861
+
+## Release v2.3.34
+* Fix graalpy-community to use a separate package name by @native-api in https://github.com/pyenv/pyenv/pull/2855
+* Move 3.11.5+ to OpenSSL 3 by default by @native-api in https://github.com/pyenv/pyenv/pull/2858
+* Add CPython 3.11.7 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2860
+
+## Release v2.3.33
+* Add miniforge3-23.3.1-1 by @goerz in https://github.com/pyenv/pyenv/pull/2839
+* Add support for miniconda3-3.11-23.10.0-1 by @binbjz in https://github.com/pyenv/pyenv/pull/2843
+* Add support for miniconda3 23.10.0-1 with py3.10、py3.9、py3.8 by @binbjz in https://github.com/pyenv/pyenv/pull/2844
+* Add CPython 3.13.0a2 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2849
+* python-build: Document PYTHON_BUILD_HOMEBREW_OPENSSL_FORMULA and PYTHON_BUILD_HTTP_CLIENT by @native-api in https://github.com/pyenv/pyenv/pull/2853
+
+## Release v2.3.32
+* Describe --no-rehash option in the manpage by @fsc-eriker in https://github.com/pyenv/pyenv/pull/2832
+* Make adding $PYENV_ROOT/bin to PATH independent of other software by @native-api in https://github.com/pyenv/pyenv/pull/2837
+* Make `pyenv init` output insertable to startup files by @native-api in https://github.com/pyenv/pyenv/pull/2838
+
+## Release v2.3.31
+* Add new anaconda and miniconda definitions by @aphedges in https://github.com/pyenv/pyenv/pull/2824
+
+## Release v2.3.30
+
+* Fix intermittent "broken pipe" in tests by @native-api in https://github.com/pyenv/pyenv/pull/2817
+* Add CPython 3.13.0a1 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2818
+* Add PyPy 7.3.13 by @dand-oss in https://github.com/pyenv/pyenv/pull/2807
+* Fix linking against Homebrew's Tcl/Tk 8.6.13 in MacOS by @startergo in https://github.com/pyenv/pyenv/pull/2820
+
+## Release v2.3.29
+
+* Add CPython 3.11.6 by @thecesrom in https://github.com/pyenv/pyenv/pull/2806
+* Add GraalPy 23.1.0 definition using the faster Oracle GraalVM distribution by @eregon in https://github.com/pyenv/pyenv/pull/2812
+* Install ncurses from Homebrew, if available by @aphedges in https://github.com/pyenv/pyenv/pull/2813
+
+## Release v2.3.28
+
+* Prioritize 'zlib from xcode sdk' flag correctly by @native-api in https://github.com/pyenv/pyenv/pull/2791
+* Prefer OpenSSL 3 in Homebrew in 3.13-dev by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2793
+* Add CPython 3.12.0rc3 by @saaketp in https://github.com/pyenv/pyenv/pull/2795
+* Add graalpy-23.1.0 and split between graalpy and graalpy-community by @msimacek in https://github.com/pyenv/pyenv/pull/2796
+* Update the OpenSSL dependency for Python 2.7.18 by @lpapp-foundry in https://github.com/pyenv/pyenv/pull/2797
+* Add CPython 3.12.0 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2804
+
+## Release v2.3.27
+
+* Prefer OpenSSL 3 in Homebrew since 3.12 by @native-api in https://github.com/pyenv/pyenv/pull/2781
+* Fix get-pip urls for older pypy versions by @TimPansino in https://github.com/pyenv/pyenv/pull/2788
+* Update openssl url for 3.12.0rc2 by @zsol in https://github.com/pyenv/pyenv/pull/2789
+  
+## Release v2.3.26
+
+* Prevent `grep` warning in `conda.bash` by @aphedges in https://github.com/pyenv/pyenv/pull/2768
+* fix a typo in README.md by @xzmeng in https://github.com/pyenv/pyenv/pull/2769
+* use -I with ensurepip by @xaocon in https://github.com/pyenv/pyenv/pull/2764
+* Add CPython 3.12.0rc2 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2778
+
+## Release v2.3.25
+
+* Add CPython 3.8.18, 3.9.18, 3.10.13, 3.11.5 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2763
+ 
+## Release v2.3.24
+
+* README update: Added UNIX reference near Automatic installer by @VictorieeMan in https://github.com/pyenv/pyenv/pull/2744
+* Fix FreeBSD tests in MacOS CI by @native-api in https://github.com/pyenv/pyenv/pull/2748
+* Add CPython 3.12.0rc1 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2752
+* [Add an updated Anaconda and Miniconda installers](https://github.com/pyenv/pyenv/commit/db871427c7a232e18ee7a6dc0182989a646ccca9)
+
+## Release v2.3.23
+
+* Add CPython 3.12.0b4 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2741
+* Add new anaconda and miniconda definitions by @aphedges in https://github.com/pyenv/pyenv/pull/2742
+
+## Release v2.3.22
+
+* Add CPython 3.12.0b3 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2730
+* Add Cinder 3.10 and Cinder configure patches by @filips123 in https://github.com/pyenv/pyenv/pull/2739
+
+## Release v2.3.21
+
+* Add graalpy-23.0.0 by @msimacek in https://github.com/pyenv/pyenv/pull/2724
+* Add PyPy 7.3.12 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2726
+* Fix occasional 'libexec/pyenv-latest: line 39: printf: write error: Broken pipe' by @native-api in https://github.com/pyenv/pyenv/pull/2729
+
+## Release v2.3.20
+
+* Backport bpo-42351 to 3.5.10 by @native-api in https://github.com/pyenv/pyenv/pull/2717
+* Add missing patches for Python 3.7/3.8/3.9 by @tomkins in https://github.com/pyenv/pyenv/pull/2718
+
+## Release v2.3.19
+
+* Add CPython 3.7.17, 3.8.17 and 3.9.17 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2711
+* Add CPython 3.11.4 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2715
+* Add CPython 3.10.12 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2714
+* Add CPython 3.12.0b2 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2713
+
+## Release 2.3.18
+
+* Fix not showing symlink contents for unselected versions in `pyenv versions` by @native-api in https://github.com/pyenv/pyenv/pull/2675
+* Correct link in has_tar_xz_support else branch of 3.10.11 and 3.11.3 by @mirekdlugosz in https://github.com/pyenv/pyenv/pull/2677
+* Fix #2682: Correct pyenv_user_setup.bash file by @tomschr in https://github.com/pyenv/pyenv/pull/2687
+* fix: updating heredoc delimiter to be random and unique by @aviadhahami in https://github.com/pyenv/pyenv/pull/2691
+* Support ksh alternative names by @kpschoedel in https://github.com/pyenv/pyenv/pull/2697
+* Add CPython 3.12.0b1 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2701
+* Update 3.12-dev and add 3.13-dev by @t0b3 in https://github.com/pyenv/pyenv/pull/2703
+
+## Release 2.3.17
+
+* Try locate `readlink` first in pyenv-hooks, fix #2654 by @Harry-Chen in https://github.com/pyenv/pyenv/pull/2655
+* Add CPython 3.12.0a7 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2668
+* Add CPython 3.11.3 by @mirekdlugosz in https://github.com/pyenv/pyenv/pull/2671
+* Add CPython 3.10.11 by @mirekdlugosz in https://github.com/pyenv/pyenv/pull/2670
+
+## Release 2.3.16
+
+* Add Miniforge3-22.11.1-4 by @jlec in https://github.com/pyenv/pyenv/pull/2642
+* Add Anaconda3-2023.03 by @anton-petrov in https://github.com/pyenv/pyenv/pull/2648
+
+## Release 2.3.15
+
+* Add miniconda 23.1.0-1 by @aphedges in https://github.com/pyenv/pyenv/pull/2635
+* Add CPython 3.12.0a6 by @saaketp in https://github.com/pyenv/pyenv/pull/2638
+
+## Release 2.3.14
+
+* Fix indentation by @rafrafek in https://github.com/pyenv/pyenv/pull/2620
+* Support for "BusyBox version" of "head" by @schuellerf in https://github.com/pyenv/pyenv/pull/2629
+* bpo-27987 for v3.5.10 and v3.6.15: align by 16bytes on 64bit platforms by @chaimleib in https://github.com/pyenv/pyenv/pull/2630
+* bpo-36231 for v3.5.10: fix Unsupported MacOS X CPU type in ffi.h by @chaimleib in https://github.com/pyenv/pyenv/pull/2633
+* README: clarify behavior of `pyenv latest` by @mrienstra in https://github.com/pyenv/pyenv/pull/2634
+
+## Release 2.3.13
+
+* Fix pyenv-latest to ignore virtualenvs by @native-api in https://github.com/pyenv/pyenv/pull/2608
+* Show symlink contents in non-bare `pyenv versions' by @native-api in https://github.com/pyenv/pyenv/pull/2609
+* Ignore virtualenvs in `pyenv latest' in a clean way by @native-api in https://github.com/pyenv/pyenv/pull/2610
+* Fix link resolving in pyenv-versions by @laggardkernel in https://github.com/pyenv/pyenv/pull/2612
+* Add CPython 3.11.2 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2615
+* Add CPython 3.10.10 by @edgarrmondragon in https://github.com/pyenv/pyenv/pull/2616
+* Add CPython 3.12.0a5 by @Afront in https://github.com/pyenv/pyenv/pull/2614
+
+## Release 2.3.12
+
+* Undefined name: do not forget self when accessing flavor by @cclauss in https://github.com/pyenv/pyenv/pull/2595
+* Fix wrong libpython being linked to in MacOS by @native-api in https://github.com/pyenv/pyenv/pull/2596
+* Fix `:latest` by @native-api in https://github.com/pyenv/pyenv/pull/2599
+* Fix `pyenv which` to support auto-resolved prefixes by @native-api in https://github.com/pyenv/pyenv/pull/2601
+* Add more recent build of nogil Python. by @colesbury in https://github.com/pyenv/pyenv/pull/2602
+
+## Release 2.3.11
+
+* Add CPython 3.12.0a4 by @Afront in https://github.com/pyenv/pyenv/pull/2590
+* Add a script to add the latest miniforge and mambaforge versions by @smcgivern in https://github.com/pyenv/pyenv/pull/2560
+* Add missing Miniforge/Mambaforge versions (4.10.2-0 - 22.9.0-3) by @smcgivern in https://github.com/pyenv/pyenv/pull/2591
+* Fix using dependencies from Ports in FreeBSD that are not searched with pkg-config by @native-api in https://github.com/pyenv/pyenv/pull/2593
+* Fix priority for user-supplied configure and make flags by (**_only set --enable-shared if user hasn't supplied --disable-shared_**) @native-api in https://github.com/pyenv/pyenv/pull/2592
+* Fix a compilation error in 3.8.10+ and 3.9.5+ when linking against Op… by @native-api in https://github.com/pyenv/pyenv/pull/2594
+
+## Release 2.3.10
+
+* Remove stray newline after python-build installation by @tklauser in https://github.com/pyenv/pyenv/pull/2566
+* Allow multiple versions for pyenv-install by @rockandska in https://github.com/pyenv/pyenv/pull/2568
+* --enable-shared by default by @anton-petrov in https://github.com/pyenv/pyenv/pull/2554
+* Fix non-bash output while detecting shell by @ianchen-tw in https://github.com/pyenv/pyenv/pull/2561
+* add pypy 7.3.11 release by @dand-oss in https://github.com/pyenv/pyenv/pull/2576
+* Mention how to build for maximum performance by @hauntsaninja in https://github.com/pyenv/pyenv/pull/2579
+* Add miniconda 22.11.1-1 by @aphedges in https://github.com/pyenv/pyenv/pull/2583
+* Add Fig as autocomplete suggestion  by @brendanfalk in https://github.com/pyenv/pyenv/pull/2574
+* Fix using dependencies from Ports in BSD with no pkg-config by @native-api in https://github.com/pyenv/pyenv/pull/2586
+
+## Release 2.3.9
+
+* Add -latest suffix to miniforge3 by @nwh in https://github.com/pyenv/pyenv/pull/2551
+* Add PyPy 7.3.10 by @dand-oss in https://github.com/pyenv/pyenv/pull/2553
+* Add miniforge3 and mambaforge 22.9.0-2 by @smcgivern in https://github.com/pyenv/pyenv/pull/2559
+* Fix compilation error when building OpenSSL 1.1.1q in MacOS 11+ for 3.9.16 by @lisbethw1130 in https://github.com/pyenv/pyenv/pull/2558
+* Add `openssl` patches for 3.7.15, 3.7.16, and 3.8.16 by @samdoran in https://github.com/pyenv/pyenv/pull/2564
+* Add support for Anaconda3-2022.10 by @huypn12 in https://github.com/pyenv/pyenv/pull/2565
+
+## Release 2.3.8
+
+* Export detected shell environment in pyenv-init by @ianchen-tw in https://github.com/pyenv/pyenv/pull/2540
+* Add CPython 3.12.0a3 by @saaketp in https://github.com/pyenv/pyenv/pull/2545
+* Add CPython 3.11.1 by @anton-petrov in https://github.com/pyenv/pyenv/pull/2549
+* Add CPython 3.10.9 by @rudisimo in https://github.com/pyenv/pyenv/pull/2544
+* Add 3.7.16, 3.8.16, 3.9.16 by @chadac in https://github.com/pyenv/pyenv/pull/2550
+
+## Release 2.3.7
+
+* Add Python version 3.11 to the macOS build by @jbkkd in https://github.com/pyenv/pyenv/pull/2510
+* Don't use Zlib from XCode SDK if a custom compiler is used by @native-api in https://github.com/pyenv/pyenv/pull/2516
+* Change line endings from CRLF to LF by @hoang-himself in https://github.com/pyenv/pyenv/pull/2517
+* Fix resolution of a name that's a prefix of another name by @native-api in https://github.com/pyenv/pyenv/pull/2521
+* GitHub Workflows security hardening by @sashashura in https://github.com/pyenv/pyenv/pull/2511
+* Add nushell to activate list by @theref in https://github.com/pyenv/pyenv/pull/2524
+* Fix compilation error when building OpenSSL 1.1.1q in MacOS 11+ for 3.9.15 and 3.8.15 by @twangboy in https://github.com/pyenv/pyenv/pull/2520
+* Add simple `.editorconfig` file by @aphedges in https://github.com/pyenv/pyenv/pull/2518
+* Support `aria2c` being a snap by @native-api in https://github.com/pyenv/pyenv/pull/2528
+* Add CPython 3.12.0a2 by @saaketp in https://github.com/pyenv/pyenv/pull/2527
+* Add --no-push-path option by @isaacl in https://github.com/pyenv/pyenv/pull/2526
+* Fix typo in README.md by @weensy in https://github.com/pyenv/pyenv/pull/2535
+* Copy auto installer oneliner to readme by @spookyuser in https://github.com/pyenv/pyenv/pull/2538
+
+## Release 2.3.6
+
+* Add CPython 3.10.8 (#2480)
+* Add CPython 3.7.15, 3.8.15, and 3.9.15 (#2482)
+* Add CPython 3.11.0 (#2493)
+* Add CPython 3.12.0a1 (#2495)
+* Add graalpy-22.3.0 (#2497)
+* Auto-resolve prefixes to the latest version (#2487)
+  * It must be a full prefix -- the actual searched prefix is `<prefix>[-.]`
+  * Other flavors are likely sorted incorrectly atm
+  * Prereleases and versions with some suffixes (`-dev`, `-src`, `-latest`) are not searched
+  * `pyenv uninstall` has been excluded from the resolution feature: deleting a dynamically selected installation could be problematic
+* Fix OpenSSL 1.1.1q compilation error in MacOS 11+ (#2500)
+* Link to Tcl/Tk from Homebrew via pkgconfig for 3.11+ (#2501)
+* Fix syntax error in `pyenv init -` if PYENV_ROOT has spaces (#2506)
+
+## Release 2.3.5
+
+* Add CPython 3.10.7 (#2454)
+* Docs: update Fish PATH update (#2449)
+* Add CPython 3.7.14, 3.8.14 and 3.9.14 (#2456)
+* Update miniconda3-3.9-4.12.0 (#2460)
+* Add CPython 3.11.0rc2 (#2459)
+* Add patches for 3.7.14 to support Apple Silicon (#2463)
+* Add ability to skip all use of Homebrew (#2464)
+* Drop Travis integration (#2468)
+* Build CPython 3.12+ with --with-dsymutil in MacOS (#2471)
+* Add Pyston 2.3.5 (#2476)
+
+## Release 2.3.4
+
+* Add CPython 3.11.0rc1 (#2434)
+* Add support for multiple versions in `pyenv uninstall` (#2432)
+* Add micropython 1.18 and 1.19.1 (#2443)
+* CI: support Micropython, deleted scripts; build with -v (#2447)
+* Re-allow paths in .python-version while still preventing CVE-2022-35861 (#2442)
+* CI: Bump OS versions (#2448)
+* Add Cinder 3.8 (#2433)
+
+## Release 2.3.3
+
+* Use version sort in `pyenv versions` (#2405)
+* Add CPython 3.11.0b4 (#2411)
+* Python-build: Replace deprecated git protocol use with https in docs (#2413)
+* Fix relative path traversal due to using version string in path (#2412)
+* Allow pypy2 and pypy3 patching (#2421, #2419)
+* Add CPython 3.11.0b5 (#2420)
+* Add GraalPython 22.2.0 (#2425)
+* Add CPython 3.10.6 (#2428)
+
+## Release 2.3.2
+
+* Add CPython 3.11.0b2 (#2380)
+* Honor CFLAGS_EXTRA for MicroPython #2006 (#2007)
+* Add post-install checks for curses, ctypes, lzma, and tkinter (#2353)
+* Add CPython 3.11.0b3 (#2382)
+* Add flags for Homebrew into `python-config --ldflags` (#2384)
+* Add CPython 3.10.5 (#2386)
+* Add Anaconda 2019.10, 2021.04, 2022.05; support Anaconda in add_miniconda.py (#2385)
+* Add Pyston-2.3.4 (#2390)
+* Update anaconda3-2022.05 MacOSX arm64 md5 (#2391)
+
+## Release 2.3.1
+
+* Version file read improvements (#2269)
+* Add CPython 3.11.0b1 (#2358)
+* Update 3.11-dev and add 3.12-dev (#2361)
+* Add CPython 3.9.13 (#2372)
+* Add miniconda 4.12.0 (#2371)
+* Fix endless loop in `pyenv init -` under SSH in some shell setups (#2374)
+* CI: Add tests for modified Python build scripts (#2286)
+
+## Release 2.3.0
+
+* Bump openssl 1.1 to 1.1.1n for CPython 3.7 3.8 3.9 (#2276)
+* Doc Fix: Escape a hash character causing unwanted GitHub Issue linking (#2282)
+* Add CPython 3.9.12 (#2296)
+* Add CPython 3.10.4 (#2295)
+* Add patch for 3.6.15 to support Xcode 13.3 (#2288)
+* Add patch for 3.7.12 to support Xcode 13.3 (#2292)
+* Add CONTRIBUTING.md (#2287)
+* Add PyPy 7.3.9 release 2022-03-30 (#2308)
+* Add Pyston 2.3.3 (#2316)
+* Add CPython 3.11.0a7 (#2315)
+* Add "nogil" Python v3.9.10 (#2342)
+* Support XCode 13.3 in all releases that officially support MacOS 11 (#2344)
+* Add GraalPython 22.1.0 (#2346)
+* Make PYENV_DEBUG imply -v for `pyenv install` (#2347)
+* Simplify init scheme (#2310)
+* Don't use Homebrew outside of MacOS (#2349)
+* Add `:latest` syntax to documentation for the `install` command (#2351)
+
+## Release 2.2.5
+
+* Add CPython 3.10.3
+* Add CPython 3.9.11
+* Add CPython 3.8.13
+* Add CPython 3.7.13
+* Add CPython 3.11.0a6 (#2266)
+* Add PyPy 7.3.8 (#2253)
+* Add miniconda3-3.7-4.11.0, miniconda3-3.8-4.11.0, miniconda3-3.9-4.11.0 (#2268)
+* Add pyston-2.3.2 (#2240)
+* Fix UnicodeDecodeError for CPython 3.6.15 and 3.7.12 (#2237)
+* python-build: add URL for get-pip for Python 3.6 (#2238)
+* Bump openssl to 1.1.1n for CPython 3.10.x
+
+## Release 2.2.4
+
+* Added docstrings to several undocumented functions (#2197)
+* Fix incorrect pypy 2.7-7.3.6 sha256 hashes (#2208)
+* Fix a regression in include paths when compiling ctypes in 3.6.15/3.7.12 (#2209)
+* Revert "Disable coreutils on M1 Apple Silicon with arm64 (#2020)" (#2212)
+* CPython 3.11.0a4 (#2217)
+* CPython 3.9.10 and 3.10.2 (#2219)
+* miniconda3-latest: added Linux-aarch64 (#2221)
+* Add GraalPython 22.0.0 (#2226)
+
+
+## Release 2.2.3
+
+* Add new pypy versions (pypy2.7-7.3.2~7.3.5) to the version list (#2194)
+* Fix Python 3.7.12 compilation on macOS arm64/M1. (#2190)
+* Fix Python 3.6.15 compilation on macOS arm64/M1. (#2189)
+* Add Anaconda3-2021.11 (#2193)
+* CPython 3.11.0a3 (#2187)
+* Fix errant "echo" in README install instructions (#2185)
+* Add Miniforge and Mambaforge 4.10.3-10 (#2184)
+* Add CPython 3.10.1 (#2183)
+* Fix 3.6.15 build on macOS (#2182)
+
+## Release 2.2.2
+
+* Add support for macOS Apple M1 (#2164)
+
+## Release 2.2.1
+
+* Add CPython 3.9.9 (#2162)
+* Add CPython 3.9.8 (#2152)
+* Add Add micropython 1.17 (#2158)
+* Add Add micropython 1.16 (#2158)
+* Patch 3.10.0 configure, fixes https://bugs.python.org/issue45350 (#2155)
+* Use command and type instead of which (#2144)
+* Add definition of pyenv help in COMMANDS.md #2139
+* Use OpenSSL 1.0 for CPython 2.7.18
+
+## Release 2.2.0
+* Adding PyPy release 7.3.7 (Python 3.7 and 3.8). (#2132)
+* Append Homebrew custom prefix to search path (#1957)
+* Add documentation for init command (#2125)
+* Add setup instructions for the case when one installs Pyenv as part of a batch job (#2127)
+* Add documentation for completions command (#2126)
+* Default --with-universal-archs to universal2 on Apple Silicon (#2122)
+* Update README.md (#2120)
+* Add GraalPython 21.3.0 (#2117)
+* Pypy ver 7.3.6 - python 3.7 and python 3.8 (#2111)
+* Discover Tcl/Tk reliably and use active version (#2106)
+* Fish installation instructions (#2104)
+* Add CPython 3.11.0a1 (#2099)
+
+## Release 2.1.0
+* Fix mambaforge-pypy3 build (#2096)
+* Add Python 3.10.0 (#2093)
+* Add documentation for exec command (#2090)
+* Add documentation for shims command (#2091)
+* Add documentation for hooks command (#2089)
+* Add documentation for root command (#2088)
+* Add documentation for prefix command (#2087)
+* Update to Pyston's v2 package of the 2.3.1 release (#2078)
+* Add pyston-2.3.1 support (#2075)
+* Don't update conda when installing pip (#2074)
+* Improve `add_miniconda.py` (#2072)
+* GitHub actions tests (#2073)
+* Fix sed commands (#2071)
+* macOS: fix the build of Python 2.7.18 on macOS 11.5.2 (Big Sur) + Apple Silicon (#2061)
+
+## Release 2.0.7
+* Update setup instructions in the Readme (#2067)
+* Allow tcl-tk as argument or try with homebrew by default (#1646)
+* Allow system Python in sbin (#2065)
+* Prevent addition of duplicate plugin dirs to PATH (#2045)
+* Disable coreutils on M1 Apple Silicon with arm64 (#2020)
+* Add Python 3.10.0rc2 (#2053)
+* Add space after `yes/no` prompt (#2040)
+* Add CPython v3.6.15 and v3.7.12 (#2052)
+* Add missing Python 2.6.x definitions and patches (#2051)
+* Fix build of ossaudiodev in Linux/FreeBSD for Python 2.6 (#2049)
+* Fix build of ossaudiodev in Linux/FreeBSD for Python 3.1 (#2047)
+
+## Release 2.0.6
+* Add CPython 3.9.7 (#2044)
+* Add CPython v3.8.12 (#2043)
+* Adapt conda.bash for bash associative array (#2037)
+
+## Release 2.0.5
+
+* Move man page to location where it can be automatically found by man (#2032)
+* Update checksums for CPython 3.10.0rc1 (#2025)
+* Remove 3.9.3 (#2022)
+* Add CPython 3.10.0rc1(#2023)
+
+## Release 2.0.4
+
+- Added scripts for rolling releases of Miniforge (#2019)
+- Update pyston-2.3 (#2017)
+- Add GraalPython 21.2.0 (#2018)
+- Add CPython  3.10.0b4 (#2013), (#2005)
+- Add Pyston 2.3 (#2012)
+
+## Release 2.0.3
+
+* Remove PATH warning (#2001)
+* Add Python 3.6.14, 3.7.11, 3.8.11, and 3.9.6 (#1996)
+* Miniforge minor update to 4.10.1-5 (#1992)
+* Suggest that fish users init in interactive mode (#1991)
+
+## Release 2.0.2
+
+* Miniforge minor update to 4.10.1-5 (#1992)
+* Suggest that fish users init in interactive mode (#1991)
+* Add 3.10.0b3 (#1988)
+* Revert "Drop inferring version to install from `pyenv local`" (#1984)
+* Use system Python3 for tests (#1979)
+* Check for shims in path with pure Bash (#1978)
+* Update setup instructions for debian, ubuntu etc. (#1977)
+
+## Release 2.0.1
+
+* Drop inferring version to install from `pyenv local` (#1907)
+* Create mambaforge-4.10.1-4 (#1971)
+* Add 3.10.0b2 recipe (#1966)
+* Fix .bashrc `echo` install syntax error (#1965)
+* Add explicit Zsh instructions for MacOS (#1964)
+* Install pip with pyston (#1955)
+* Mention log file if an error happened before building, too (#1537)
+* Add pypy3.7-7.3.5 (#1950)
+
+## Release 2.0.0
+
+* Support for CPython 3.9.5 has been added.
+* Support for CPython 3.8.10 has been added.
+* Support for CPython 3.10.0b1 has been added.
+* Support for GraalPython 21.1.0 has been added.
+* Support for  Anaconda 2021.05 has been added.
+* Support for   Miniforge3 4.10.1-1 has been added.
+* CPython 3.10-dev target branch renamed.
+* CPython 3.10-dev and 3.11-dev updated.
+* Bump OpenSSL to 1.1.1x for all Pythons that support MacOS 11
+* Update generated configuration files before run ./configure
+* Full shell configuration instructions placed into `pyenv init`
+* Prevent build from installing MacOS apps globally
+* ldflags_dirs is not needed for Python and causes failures
+* Report cache filename at download
+* Add micropython 1.15
+* Correct URLs for Stackless builds and add Stackless 2.7.16
+
+## Breaking changes
+* Split startup logic into PATH and everything else (https://github.com/pyenv/pyenv/issues/1649#issuecomment-694388530)
+
+## 1.2.27
+
+* Add GraalPython 21.1.0 (#1882)
+* Add CPython 3.10.0a7 (#1880)
+* Docs(README): fix info about version-file separator (#1874)
+* List versions starting with a dot (#1350)
+* Feat: support (skip) commented lines in version-file (#1866)
+* pypy3.7-7.3.4 (#1873)
+* Create miniforge3-4.10 (#1868)
+* Add CPython 3.9.4 (#1865)
 
 ## 1.2.26
 
@@ -636,7 +1645,7 @@
 * pyenv: Prefer gawk over awk if both are available.
 * python-build: Add new PyPy release; pypy-2.3, pypy-2.3-src (#162)
 * python-build: Add new Anaconda release; anaconda-1.9.2 (#155)
-* python-build: Add new Miniconda releases; miniconda-3.3.0, minoconda-3.4.2, miniconda3-3.3.0, miniconda3-3.4.2
+* python-build: Add new Miniconda releases; miniconda-3.3.0, miniconda-3.4.2, miniconda3-3.3.0, miniconda3-3.4.2
 * python-build: Add new Stackless releases; stackless-2.7.3, stackless-2.7.4, stackless-2.7.5, stackless-2.7.6, stackless-3.2.5, stackless-3.3.5 (#164)
 * python-build: Add IronPython versions (setuptools and pip will work); ironpython-2.7.4, ironpython-dev
 * python-build: Add new Jython beta release; jython-2.7-beta2
